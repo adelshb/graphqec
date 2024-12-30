@@ -49,3 +49,65 @@ class ShorCode(BaseCode):
 
         # Initialize the circuit
         self._memory_circuit = Circuit()
+
+        # Apply depolarization gate to all data qubits
+        number_of_data_qubits = int(self.distance / 3)
+        for q in range(number_of_data_qubits):
+            self._memory_circuit.append("DEPOLARIZE1", [q], self.depolarize1_rate)
+
+        # Repeated block
+        for round in range(number_of_rounds):
+
+            # Loop over the ancillary qubits
+            for q in range(number_of_data_qubits, self._number_of_qubits):
+
+                # Reset and apply depolarizing error to all ancillary qubits
+                self._memory_circuit.append("R", [q])
+                self._memory_circuit.append("DEPOLARIZE1", [q], self.depolarize1_rate)
+
+            # Loop over the data qubits
+            for q in range(number_of_data_qubits):
+                # First layer of CNOTs
+                self._memory_circuit.append("CNOT", [q, 3*number_of_data_qubits + q])
+                self._memory_circuit.append("DEPOLARIZE2", [q, 3*number_of_data_qubits + q], self.depolarize2_rate)
+
+                self._memory_circuit.append("CNOT", [q, 6*number_of_data_qubits + q])
+                self._memory_circuit.append("DEPOLARIZE2", [q, 6*number_of_data_qubits + q], self.depolarize2_rate)
+
+                # Layer of Hadamards
+                self._memory_circuit.append("H", [q])
+                self._memory_circuit.append("DEPOLARIZE1", [q], self.depolarize1_rate)
+
+                self._memory_circuit.append("H", [q+3*number_of_data_qubits])
+                self._memory_circuit.append("DEPOLARIZE1", [q+3*number_of_data_qubits], self.depolarize1_rate)
+
+                self._memory_circuit.append("H", [q+6*number_of_data_qubits])
+                self._memory_circuit.append("DEPOLARIZE1", [q+6*number_of_data_qubits], self.depolarize1_rate)
+
+                # Second layer of CNOTs
+                self._memory_circuit.append("CNOT", [q, q+1*number_of_data_qubits])
+                self._memory_circuit.append("DEPOLARIZE2", [q, q+1*number_of_data_qubits], self.depolarize2_rate)
+
+                self._memory_circuit.append("CNOT", [q+3*number_of_data_qubits, q+4*number_of_data_qubits])
+                self._memory_circuit.append("DEPOLARIZE2", [q+3*number_of_data_qubits, q+4*number_of_data_qubits], self.depolarize2_rate)
+
+                self._memory_circuit.append("CNOT", [q+6*number_of_data_qubits, q+7*number_of_data_qubits])
+                self._memory_circuit.append("DEPOLARIZE2", [q+6*number_of_data_qubits, q+7*number_of_data_qubits], self.depolarize2_rate)
+
+                self._memory_circuit.append("CNOT", [q, q+2*number_of_data_qubits])
+                self._memory_circuit.append("DEPOLARIZE2", [q, q+2*number_of_data_qubits], self.depolarize2_rate)
+
+                self._memory_circuit.append("CNOT", [q+3*number_of_data_qubits, q+5*number_of_data_qubits])
+                self._memory_circuit.append("DEPOLARIZE2", [q+3*number_of_data_qubits, q+5*number_of_data_qubits], self.depolarize2_rate)
+
+                self._memory_circuit.append("CNOT", [q+6*number_of_data_qubits, q+8*number_of_data_qubits])
+                self._memory_circuit.append("DEPOLARIZE2", [q+6*number_of_data_qubits, q+8*number_of_data_qubits], self.depolarize2_rate)
+
+                # Measure the ancilla qubits
+                for q in range(number_of_data_qubits, self._number_of_qubits):
+                    self._memory_circuit.append("DEPOLARIZE1", [q], self.depolarize1_rate)
+                    self._memory_circuit.append("M", [q])
+            
+            for q in range(number_of_data_qubits):
+                self._memory_circuit.append("DEPOLARIZE1", [q], self.depolarize1_rate)
+                self._memory_circuit.append("M", [q])
