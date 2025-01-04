@@ -169,15 +169,12 @@ class BivariateBicycleCode(BaseCode):
 
         neighbors = []
         for coords in new_neighbors_coords:
-            try:
-                node = [
-                    node
-                    for node, data in self.graph.nodes(data=True)
-                    if data.get("coords") == coords
-                ][0]
-                neighbors.append(node)
-            except IndexError:
-                neighbors.append(None)
+            node = [
+                node
+                for node, data in self.graph.nodes(data=True)
+                if data.get("coords") == coords
+            ][0]
+            neighbors.append(node)
 
         if index_order is None:
             return neighbors
