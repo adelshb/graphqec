@@ -32,8 +32,7 @@ class BivariateBicycleCode(BaseCode):
         """
 
         self._name = "Bivariate Bicycle"
-        self._checks = ["Z-check", "X-check"]
-        # self._logic_check = []
+        self._logic_check = []
 
         super().__init__(*args, **kwargs)
 
@@ -99,6 +98,34 @@ class BivariateBicycleCode(BaseCode):
         ]
         self._graph.add_nodes_from(Z_check)
 
+        # Add the ordered edges for the X checks
+        x_edges = []
+        for qx in X_check:
+
+            coords = qx[1]["coords"]
+            ordered_neighbors = self.get_neighbor_qubits(
+                coord=coords,  # index_order=[1, 3, 0, 2]
+            )
+
+            for order, neighbor in enumerate(ordered_neighbors):
+                if neighbor is not None:
+                    x_edges.append((neighbor, qx[0], order + 1))
+        self._graph.add_weighted_edges_from(x_edges)
+
+        # Add the ordered edges for the Z checks
+        z_edges = []
+        for qz in Z_check:
+
+            coords = qz[1]["coords"]
+            ordered_neighbors = self.get_neighbor_qubits(
+                coord=coords,  # index_order=[1, 0, 3, 2]
+            )
+
+            for order, neighbor in enumerate(ordered_neighbors):
+                if neighbor is not None:
+                    z_edges.append((neighbor, qz[0], order + 1))
+        self._graph.add_weighted_edges_from(z_edges)
+
     def get_neighbor_qubits(
         self, coord: tuple[float, float], index_order: list[int] | None = None
     ) -> list[int]:
@@ -113,23 +140,28 @@ class BivariateBicycleCode(BaseCode):
         :param index_order: The order in which the neighbors are
         """
         col, row = coord
-        neighbors_coords = [(col + dx, row + dy) for dx in [-1, 1] for dy in [-1, 1]]
+        neighbors_coords = [
+            (col - 1, row),
+            (col + 1, row),
+            (col, row - 1),
+            (col, row + 1),
+        ]
 
         # TODO: Add long range neighbours
 
         new_neighbors_coords = []
         for col, row in neighbors_coords:
             if col < 1:
-                new_col = col + 12
-            elif col > 12:
-                new_col = col - 12
+                new_col = col + 2 * self.distance
+            elif col > 2 * self.distance:
+                new_col = col - 2 * self.distance
             else:
                 new_col = col
 
             if row < 1:
-                new_row = row + 12
-            elif col > 12:
-                new_row = row - 12
+                new_row = row + self.distance
+            elif row > self.distance:
+                new_row = row - self.distance
             else:
                 new_row = row
 
