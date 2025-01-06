@@ -12,7 +12,7 @@
 
 import pytest
 
-from qec import Measurement
+from graphqec import Measurement
 
 
 class TestMeasurement:

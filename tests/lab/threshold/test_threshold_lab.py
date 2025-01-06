@@ -14,7 +14,7 @@ import pytest
 
 import numpy as np
 
-from qec import RepetitionCode, ThresholdLAB
+from graphqec import RepetitionCode, ThresholdLAB
 
 
 class TestRepetitionCode:

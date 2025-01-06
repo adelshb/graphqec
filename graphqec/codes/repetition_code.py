@@ -12,7 +12,7 @@
 
 from __future__ import annotations
 
-from qec.codes.base_code import BaseCode
+from graphqec.codes.base_code import BaseCode
 
 __all__ = ["RepetitionCode"]
 

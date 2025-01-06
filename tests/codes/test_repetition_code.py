@@ -14,7 +14,7 @@ import pytest
 
 from stim import Circuit
 
-from qec import RepetitionCode
+from graphqec import RepetitionCode
 
 
 class TestRepetitionCode:

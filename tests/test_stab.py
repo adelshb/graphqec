@@ -14,7 +14,7 @@ import pytest
 
 from stim import Circuit
 
-from qec import X_check, Z_check
+from graphqec import X_check, Z_check
 
 
 class TestStab:

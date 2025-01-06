@@ -1,30 +1,63 @@
-![Logo](qec-with-code_logo.png)
+<!-- ![Logo](qec-with-code_logo.png) -->
+# Graph QEC
 
 [![Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue)](https://opensource.org/licenses/Apache-2.0)
 
-This repository provides a collection of **Quantum Error Correction (QEC)** code implementations. The goal is to demonstrate how QEC works with different error thresholds and provide practical examples of implementing error correction codes on quantum circuits.
+**Graph QEC** is a Python package under development that provides tools for implementing **Quantum Error Correction Codes (QECC)** by constructing their **Tanner Graphs**, automatically compiling them into **[Stim](https://github.com/quantumlib/Stim)** circuits, and computing error correction thresholds. This package allows researchers and developers to explore quantum error correction techniques, simulate quantum codes under gate error models, and analyze their performance through error thresholds.
+
+## Features
+
+- **Tanner Graph Representation**: Visualize and analyze quantum error correction codes through Tanner graphs, a graphical representation that simplifies the understanding of code structure and error syndromes.
+- **Stim Circuit Compilation**: Automatically compile Tanner graphs into **Stim** circuits, enabling easy integration with simulation tools for error correction and noise analysis.
+- **Threshold Computation**: Compute and analyze the error threshold of a quantum code, which indicates the error rate at which the code remains fault-tolerant.
 
 ## List of Implemented QEC Codes
 
-- **[Repetition code](notebooks/repetition_code.ipynb)**
-- **[Rotated surface code](notebooks/rotated_surface_code.ipynb)**
+- **[Repetition Code](notebooks/repetition_code.ipynb)**
+- **[Shor Code](#)** (**in progress**)
+- **[Rotated Surface Code](notebooks/rotated_surface_code.ipynb)**
+- **[Bivariate Bicycle Code](#)** (**in progress**).
 
 ## Installation
 
-This package can be installed by cloning the repository and running
+Since **Graph QEC** is not yet available on PyPI, you can install it by cloning the repository directly from GitHub:
+
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/adelshb/graphqec
+   cd graphqec
+
+2. You can then install the package by running:
+
+   ```bash
+   pip install .
+
+This will install the package in your local environment. Once installed, you can use it to generate Tanner graphs, compile Stim circuits, and compute error thresholds.
+
+## Installation
+
+Since **Graph QEC** is not yet available on PyPI, you can install it by cloning the repository directly from GitHub:
+
+```consoleCopy code
+git clone https://github.com/adelshb/graphqec
+cd graphqec
+```
+
+then, this package can be then installed by running
 
 ```console
 pip install .
 ```
 
-in the root directory of this repostory.
+in the root directory of this repository.
 
 ## Basic Usage
 
 ### Visualizing the graph
 
 ```py
-from qec import RotatedSurfaceCode
+from graphqec import RotatedSurfaceCode
 
 # Initializaze the graph
 rot = RotatedSurfaceCode(distance = 5)
@@ -37,7 +70,7 @@ rot.draw_graph()
 ### Accessing Stim circuit
 
 ```py
-from qec import RepetitionCode
+from graphqec import RepetitionCode
 
 # Initializaze the graph
 rep = RepetitionCode(
@@ -54,7 +87,7 @@ rep.memory_circuit.diagram()
 ### Running a threshold computation
 
 ```py
-from qec import RepetitionCode, ThresholdLAB
+from graphqec import RepetitionCode, ThresholdLAB
 
 # Initialize the Threshold LAB instance
 th = ThresholdLAB(
