@@ -14,7 +14,7 @@ import pytest
 
 import stim
 
-from qec import RotatedSurfaceCode, Measurement
+from graphqec import RotatedSurfaceCode, Measurement
 
 
 class TestRotatedSurfaceCode:

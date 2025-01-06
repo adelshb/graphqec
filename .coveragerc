@@ -8,5 +8,5 @@ omit =
 [coverage:report]
 show_missing = True
 skip_covered = True
-include = 
-    qec/*
+include =
+    graphqec/*

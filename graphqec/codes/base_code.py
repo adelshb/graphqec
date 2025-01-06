@@ -18,8 +18,8 @@ import matplotlib.patches as mpatches
 import networkx as nx
 from stim import Circuit, target_rec
 
-from qec.measurement import Measurement
-from qec.stab import X_check, Z_check
+from graphqec.measurement import Measurement
+from graphqec.stab import X_check, Z_check
 
 __all__ = ["BaseCode"]
 

@@ -16,7 +16,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pymatching
 
-from qec.codes.base_code import BaseCode
+from graphqec.codes.base_code import BaseCode
 
 __all__ = ["ThresholdLAB"]
 
