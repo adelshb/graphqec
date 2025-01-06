@@ -35,23 +35,6 @@ Since **Graph QEC** is not yet available on PyPI, you can install it by cloning 
 
 This will install the package in your local environment. Once installed, you can use it to generate Tanner graphs, compile Stim circuits, and compute error thresholds.
 
-## Installation
-
-Since **Graph QEC** is not yet available on PyPI, you can install it by cloning the repository directly from GitHub:
-
-```consoleCopy code
-git clone https://github.com/adelshb/graphqec
-cd graphqec
-```
-
-then, this package can be then installed by running
-
-```console
-pip install .
-```
-
-in the root directory of this repository.
-
 ## Basic Usage
 
 ### Visualizing the graph
