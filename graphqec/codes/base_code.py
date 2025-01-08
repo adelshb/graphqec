@@ -30,7 +30,8 @@ class BaseCode(ABC):
     """
 
     __slots__ = (
-        "_name" "_distance",
+        "_name",
+        "_distance",
         "_memory_circuit",
         "_depolarize1_rate",
         "_depolarize2_rate",
@@ -65,6 +66,10 @@ class BaseCode(ABC):
         self._graph = nx.Graph()
         self.build_graph()
         self.get_check_label()
+
+        self._length_sym_measurement = max(
+            nx.get_edge_attributes(self.graph, "weight").values()
+        )
 
     @property
     def name(self) -> str:
@@ -218,7 +223,7 @@ class BaseCode(ABC):
         # Syndrome extraction grouping data qubits
         for qz in check_qubits["Z-check"]:
 
-            qz_adjacent_data_qubits = self.graph.neighbors(qz)
+            qz_adjacent_data_qubits = list(self.graph.neighbors(qz))
 
             recs = [
                 self.get_target_rec(qubit=qd, round=number_of_rounds)
@@ -265,7 +270,7 @@ class BaseCode(ABC):
         measured = {qd: False for qd in data_qubits}
 
         # Perform CNOTs with specific order to avoid hook errors
-        for order in range(1, 5):
+        for order in range(1, self._length_sym_measurement + 1):
             for check in check_qubits.keys():
                 for q in check_qubits[check]:
                     data = [
@@ -360,6 +365,7 @@ class BaseCode(ABC):
         :param qubit: The qubit on which the measurement is performed.
         :param round: The round during which the measurement is performed.
         """
+
         try:
             return (
                 self.measurement.get_register_id(qubit=qubit, round=round)

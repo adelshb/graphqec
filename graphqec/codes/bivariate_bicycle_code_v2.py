@@ -93,6 +93,15 @@ class BivariateBicycleCode(BaseCode):
 
         super().__init__(*args, **kwargs)
 
+        # n, k , d = self.get_parameters()
+        n = 144
+        k = 12
+        # d = 12
+        d = 1
+        self._distance = d
+
+        self._name = f"Bivariate Bicycle [[{n},{k},{d}]]"
+
     def compute_check_matrices(self) -> None:
         r""" """
         # Construct the cyclic shifts matrices
@@ -118,6 +127,24 @@ class BivariateBicycleCode(BaseCode):
         self.B1 = y[self.b1]
         self.B2 = x[self.b2]
         self.B3 = x[self.b3]
+
+    def get_parameters(self) -> tuple[int]:
+        r"""Compute the parameters [[n,k,d]] of the code."""
+
+        n = self.Lx * self.Ly
+
+        AT = np.transpose(self.A)
+        BT = np.transpose(self.B)
+
+        hx = np.hstack((self.A, self.B))
+        hz = np.hstack((BT, AT))
+
+        # number of logical qubits
+        k = n - rankF2(hx) - rankF2(hz)
+
+        # TODO
+        d = None
+        return n, k, d
 
     def build_graph(self) -> None:
         r"""
@@ -185,7 +212,8 @@ class BivariateBicycleCode(BaseCode):
         r"""
         Return ordered neighbors list of the given node.
 
-        :param node: a tuple containing the
+        :param node: a tuple containing the node number in the graph
+            and a dictionnary of attributes.
         """
 
         neighbors = []
@@ -226,3 +254,33 @@ class BivariateBicycleCode(BaseCode):
                     neighbors.append(filtered_nodes[0])
 
         return neighbors
+
+
+def rankF2(A: np.ndarray) -> int:
+    r"""
+    Return the rank of A over the binary field F_2.
+    From https://github.com/sbravyi/BivariateBicycleCodes
+
+    :param A: The array.
+    """
+
+    X = np.identity(A.shape[1], dtype=int)
+
+    for i in range(A.shape[0]):
+
+        y = np.dot(A[i, :], X) % 2
+
+        not_y = (y + 1) % 2
+        good = X[:, np.nonzero(not_y)]
+        good = good[:, 0, :]
+
+        bad = X[:, np.nonzero(y)]
+        bad = bad[:, 0, :]
+
+        if bad.shape[1] > 0:
+            bad = np.add(bad, np.roll(bad, 1, axis=1))
+            bad = bad % 2
+            bad = np.delete(bad, 0, axis=1)
+            X = np.concatenate((good, bad), axis=1)
+
+    return A.shape[1] - X.shape[1]

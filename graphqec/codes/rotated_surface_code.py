@@ -31,10 +31,9 @@ class RotatedSurfaceCode(BaseCode):
         Initialize the Rotated Surface Code instance.
         """
 
-        self._name = "Rotated Surface"
-
         super().__init__(*args, **kwargs)
 
+        self._name = f"Rotated Surface [[{self.distance**2},1,{self.distance}]]"
         self._logic_check = [i + i * self.distance for i in range(self.distance)]
 
     def build_graph(self) -> None:

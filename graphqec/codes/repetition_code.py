@@ -31,10 +31,11 @@ class RepetitionCode(BaseCode):
         Initialize the Repetition code instance.
         """
 
-        self._name = "Repetition"
         self._logic_check = [0]
 
         super().__init__(*args, **kwargs)
+
+        self._name = f"Repetition [[{2*self.distance-1},1,{self.distance}]]"
 
     def build_graph(self) -> None:
         r"""

@@ -27,36 +27,34 @@ class ThresholdLAB:
     """
 
     __slots__ = (
-        "_distances",
+        "_configurations",
         "_error_rates",
         "_code",
         "_collected_stats",
-        "_code_name",
     )
 
     def __init__(
-        self, code: BaseCode, distances: list[int], error_rates: list[float]
+        self, code: BaseCode, configurations: dict[str, any], error_rates: list[float]
     ) -> None:
         r"""
         Initialization of the Base Code class.
 
         :param code: The code
-        :param distances: Distances for the code.
+        :param configurations: Distances for the code.
         :param error_rates: Error rate.
         """
 
-        self._distances = distances
+        self._configurations = configurations
         self._code = code
-        self._code_name = code().name
         self._error_rates = error_rates
         self._collected_stats = {}
 
     @property
-    def distances(self) -> list[int]:
+    def configurations(self) -> list[int]:
         r"""
         The distances of the code.
         """
-        return self._distances
+        return self._configurations
 
     @property
     def error_rates(self) -> list[float]:
@@ -78,13 +76,6 @@ class ThresholdLAB:
         The collected stats during sampling.
         """
         return self._collected_stats
-
-    @property
-    def code_name(self) -> str:
-        r"""
-        The code name.
-        """
-        return self._code_name
 
     @staticmethod
     def compute_logical_errors(code: BaseCode, num_shots: int) -> int:
@@ -122,7 +113,7 @@ class ThresholdLAB:
         r"""Collect sampling statistics over ranges of distance and errors."""
 
         # Loop over distance range
-        for distance in self.distances:
+        for configuration in self.configurations:
 
             temp_logical_error_rate = []
 
@@ -131,11 +122,11 @@ class ThresholdLAB:
 
                 # Build the circuit for the code
                 code = self.code(
-                    distance=distance,
+                    **configuration,
                     depolarize1_rate=prob_error,
                     depolarize2_rate=prob_error,
                 )
-                code.build_memory_circuit(number_of_rounds=distance * 3)
+                code.build_memory_circuit(number_of_rounds=code.distance)
 
                 # Get the logical error rate
                 num_errors_sampled = self.compute_logical_errors(
@@ -143,7 +134,7 @@ class ThresholdLAB:
                 )
                 temp_logical_error_rate.append(num_errors_sampled / num_shots)
 
-            self._collected_stats[distance] = temp_logical_error_rate
+            self._collected_stats[code.name] = temp_logical_error_rate
 
     def plot_stats(
         self,
@@ -156,10 +147,8 @@ class ThresholdLAB:
 
         fig, ax = plt.subplots(1, 1)
 
-        for distance in self.collected_stats.keys():
-            ax.plot(
-                self.error_rates, self.collected_stats[distance], label=f"d={distance}"
-            )
+        for code in self.collected_stats.keys():
+            ax.plot(self.error_rates, self.collected_stats[code], label=code)
 
         if x_min is not None and x_max is not None:
             ax.set_xlim(x_min, x_max)
@@ -167,7 +156,7 @@ class ThresholdLAB:
             ax.set_ylim(y_min, y_max)
 
         ax.loglog()
-        ax.set_title(f"{self.code_name} Code Error Rates")
+        # ax.set_title(f"{self.code_name} Code Error Rates")
         ax.set_xlabel("Phyical Error Rate")
         ax.set_ylabel("Logical Error Rate")
         ax.grid(which="major")
