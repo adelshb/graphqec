@@ -42,7 +42,7 @@ class BaseCode(ABC):
 
     def __init__(
         self,
-        distance: int = 3,
+        distance: int | None = None,
         depolarize1_rate: float = 0,
         depolarize2_rate: float = 0,
     ) -> None:

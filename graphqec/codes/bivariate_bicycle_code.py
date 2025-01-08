@@ -12,7 +12,7 @@
 
 from __future__ import annotations
 
-from qec.codes.base_code import BaseCode
+from graphqec.codes.base_code import BaseCode
 
 __all__ = ["BivariateBicycleCode"]
 
@@ -100,6 +100,7 @@ class BivariateBicycleCode(BaseCode):
 
         # Add the ordered edges for the X checks
         x_edges = []
+        # node_order_X = [None, 1, 4, 3, 5, 0, 2]
         for qx in X_check:
 
             coords = qx[1]["coords"]
@@ -114,6 +115,7 @@ class BivariateBicycleCode(BaseCode):
 
         # Add the ordered edges for the Z checks
         z_edges = []
+        # node_order_Z = [3, 5, 0, 1, 2, 4, None]
         for qz in Z_check:
 
             coords = qz[1]["coords"]
@@ -127,7 +129,7 @@ class BivariateBicycleCode(BaseCode):
         self._graph.add_weighted_edges_from(z_edges)
 
     def get_neighbor_qubits(
-        self, coord: tuple[float, float], index_order: list[int] | None = None
+        self, coord: tuple[float, float], index_order: list[int | None] | None = None
     ) -> list[int]:
         r"""
         Returns the four diagonal qubit, ordered as default:
