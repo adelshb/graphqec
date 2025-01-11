@@ -58,21 +58,29 @@ class ShorCode(BaseCode):
             ]
         )
 
-        # Add X checks
+        # Add X checks on alternting sides
         self._graph.add_nodes_from(
             [
                 (self.block(i) + num_data_qubits + num_z_checks, {"type": "X-check", "coords": (i + 2*self.distance - 1, i)})
-                for i in range(num_data_qubits - self.distance) if self.index_within_block(i) == 0
+                for i in range(num_data_qubits - self.distance)
+                if self.index_within_block(i) == 0 and self.block(i) % 2 == 0
+            ]
+        )
+        self._graph.add_nodes_from(
+            [
+                (self.block(i) + num_data_qubits + num_z_checks, {"type": "X-check", "coords": (i, i + 2*self.distance - 1)})
+                for i in range(num_data_qubits - self.distance)
+                if self.index_within_block(i) == 0 and self.block(i) % 2 != 0
             ]
         )
 
         # Add Z-check edges
         self._graph.add_weighted_edges_from(
-            [(i, i + num_data_qubits - i // self.distance, 1)
+            [(i, i + num_data_qubits - self.block(i), 1)
              for i in range(num_data_qubits) if self.index_within_block(i) != (self.distance-1)]
         )
         self._graph.add_weighted_edges_from(
-            [(i, i + num_data_qubits - i // self.distance - 1, 1)
+            [(i, i + num_data_qubits - self.block(i) - 1, 1)
              for i in range(num_data_qubits) if self.index_within_block(i) != 0]
         )
 
@@ -92,6 +100,6 @@ class ShorCode(BaseCode):
     
     def index_within_block(self, data_qubit_index):
         r"""
-        Returns a data qubit's index within a block
+        A data qubit's index within a block
         """
         return data_qubit_index % self.distance
