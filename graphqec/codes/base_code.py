@@ -39,6 +39,7 @@ class BaseCode(ABC):
         "_graph",
         "_checks",
         "_logic_check",
+        "_length_sym_measurement",
     )
 
     def __init__(
