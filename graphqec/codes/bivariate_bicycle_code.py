@@ -49,14 +49,14 @@ class BivariateBicycleCode(BaseCode):
         - A = x^{a_1} + y^{a_2} + y^{a_3}
         - B = y^{b_1} + x^{b_2} + x^{b_3}
 
-        :param Lx:
-        :param Ly:
-        :param a1:
-        :param a2:
-        :param a3:
-        :param b1:
-        :param b2:
-        :param b3:
+        :param Lx: Indicating the number of physical qubits on one axis.
+        :param Ly: Indicating the number of physical qubits on one axis.
+        :param a1: Power in the polynomial.
+        :param a2: Power in the polynomial.
+        :param a3: Power in the polynomial.
+        :param b1: Power in the polynomial.
+        :param b2: Power in the polynomial.
+        :param b3: Power in the polynomial.
         """
 
         self._name = "Bivariate Bicycle"

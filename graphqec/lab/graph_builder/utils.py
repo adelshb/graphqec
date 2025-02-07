@@ -19,7 +19,14 @@ from networkx import Graph
 def check_neighbor_attribute(
     graph: Graph, node: int, attribute_name: str, attribute_value: str
 ) -> bool:
-    r"""Check if any neighbor of a given node has a specific attribute."""
+    r"""
+    Check if any neighbor of a given node has a specific attribute.
+
+    :param graph: The graph over which we check the attributes.
+    :param node: The node from which we check the neighbors.
+    :param attribute_name: The attribute name.
+    :param attribute_value: The attribute value.
+    """
 
     # Get the neighbors of the node
     neighbors = graph.neighbors(node)
@@ -34,7 +41,13 @@ def check_neighbor_attribute(
 def find_cycle_with_attributes(
     graph: Graph, target_attributes: list[dict[str, str]], target_cycle_length: int
 ) -> list[list[int]]:
-    r"""Find all cycles in the graph where nodes satisfy target attributes."""
+    r"""
+    Find all cycles in the graph where nodes satisfy target attributes.
+
+    :param graph: The graph over which we check the attributes.
+    :param target_attributes: A list of dictionary for the attributes for each node.
+    :param target_cycle: The length of the cycles we want to find.
+    """
 
     # Find all simple cycles in the graph
     cycles = list(nx.simple_cycles(graph))
@@ -53,9 +66,12 @@ def find_cycle_with_attributes(
     return filtered_cycles
 
 
-def is_subset_of(sublist, mainlist):
+def is_subset_of(sublist: list[dict], mainlist: list[dict]) -> bool:
     r"""
     Check if each dictionary in sublist is a subset of any dictionary in mainlist.
+
+    :param sublist: A list of dictionnary we want to find in the other list.
+    :param mainlist: A list of dictionnary we want to find a subset from.
     """
     for dict1 in sublist:
         match_found = False

@@ -249,6 +249,10 @@ class BaseCode(ABC):
     ) -> None:
         r"""
         Append the stabilizer circuit.
+
+        :param round: The correction round.
+        :param data_qubits: A list of data qubits index.
+        :param check_qubits: A list of check qubits.
         """
 
         temp = [item for item in check_qubits.values()]
@@ -313,6 +317,13 @@ class BaseCode(ABC):
     def append_stab_element(
         self, data_qubit: any, check_qubit: any, check: str
     ) -> None:
+        r"""
+        Append a stabilizer circuit to the circuit.
+
+        :param data_qubits: A list of data qubits index.
+        :param check_qubits: A list of check qubits.
+        :param check: A string indicating what stabilizer we are doing.
+        """
 
         if check == "Z-check":
             Z_check(
@@ -381,7 +392,6 @@ class BaseCode(ABC):
         """
 
         # Extract qubit type for coloring
-        # node_categories = nx.get_node_attributes(self.graph, "type")
         node_categories = {}
         for node, data in self.graph.nodes(data=True):
             if data["label"] is not None:

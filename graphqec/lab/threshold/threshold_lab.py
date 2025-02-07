@@ -110,7 +110,11 @@ class ThresholdLAB:
         return num_errors
 
     def collect_stats(self, num_shots: int) -> None:
-        r"""Collect sampling statistics over ranges of distance and errors."""
+        r"""
+        Collect sampling statistics over ranges of distance and errors.
+
+        :param num_shots: The number of samples.
+        """
 
         # Loop over distance range
         for configuration in self.configurations:
@@ -143,7 +147,14 @@ class ThresholdLAB:
         y_min: float | None = None,
         y_max: float | None = None,
     ) -> None:
-        r"""Plot the collected data"""
+        r"""
+        Plot the collected data
+
+        :param x_min: The x_min for the plot.
+        :param x_max: The x_max for the plot.
+        :param y_min: The y_min for the plot.
+        :param y_max: The y_max for the plot.
+        """
 
         fig, ax = plt.subplots(1, 1)
 
@@ -156,7 +167,6 @@ class ThresholdLAB:
             ax.set_ylim(y_min, y_max)
 
         ax.loglog()
-        # ax.set_title(f"{self.code_name} Code Error Rates")
         ax.set_xlabel("Phyical Error Rate")
         ax.set_ylabel("Logical Error Rate")
         ax.grid(which="major")
