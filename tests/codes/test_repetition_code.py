@@ -30,7 +30,7 @@ class TestRepetitionCode:
         assert self.code.distance == 5
         assert self.code.depolarize1_rate == 0.01
         assert self.code.depolarize2_rate == 0
-        assert self.code.name == "Repetition"
+        assert self.code.name == "Repetition [[9,1,5]]"
 
     def test_build_memory_circuit(self):
         self.code.build_memory_circuit(number_of_rounds=2)

@@ -22,13 +22,14 @@ class TestRepetitionCode:
     @pytest.fixture(autouse=True)
     def init(self) -> None:
         self.th = ThresholdLAB(
-            distances=[3, 5], code=RepetitionCode, error_rates=np.linspace(0, 0.1, 10)
+            configurations=[{"distance": d} for d in [3, 5]],
+            code=RepetitionCode,
+            error_rates=np.linspace(0, 0.1, 10),
         )
 
     def test_init(self):
-        assert self.th.distances == [3, 5]
-        assert isinstance(self.th.code(), RepetitionCode)
-        assert self.th.code_name == "Repetition"
+        assert self.th.configurations == [{"distance": d} for d in [3, 5]]
+        assert self.th.code == RepetitionCode
         assert (self.th.error_rates == np.linspace(0, 0.1, 10)).all()
         assert self.th.collected_stats == {}
 
@@ -41,13 +42,12 @@ class TestRepetitionCode:
         assert num_errors_sampled == 0
 
     def test_collect_states(self):
-
-        rep = RepetitionCode(distance=3, depolarize1_rate=0, depolarize2_rate=0)
-        rep.build_memory_circuit(number_of_rounds=1)
-
         self.th.collect_stats(num_shots=10)
 
-        assert list(self.th.collected_stats.keys()) == [3, 5]
-        assert isinstance(self.th.collected_stats[3], list)
-        assert isinstance(self.th.collected_stats[3][0], float)
-        assert len(self.th.collected_stats[3]) == 10
+        assert list(self.th.collected_stats.keys()) == [
+            "Repetition [[5,1,3]]",
+            "Repetition [[9,1,5]]",
+        ]
+        assert isinstance(self.th.collected_stats["Repetition [[5,1,3]]"], list)
+        assert isinstance(self.th.collected_stats["Repetition [[5,1,3]]"][0], float)
+        assert len(self.th.collected_stats["Repetition [[5,1,3]]"]) == 10

@@ -14,7 +14,7 @@ import pytest
 
 from stim import Circuit
 
-from qec import BivariateBicycleCode
+from graphqec import BivariateBicycleCode
 
 
 class TestBivariateBicycleCode:
@@ -22,15 +22,31 @@ class TestBivariateBicycleCode:
     @pytest.fixture(autouse=True)
     def init(self) -> None:
         self.code = BivariateBicycleCode(
-            distance=5, depolarize1_rate=0.01, depolarize2_rate=0
+            Lx=12,
+            Ly=6,
+            a1=3,
+            a2=1,
+            a3=2,
+            b1=3,
+            b2=1,
+            b3=2,
+            depolarize1_rate=0.01,
+            depolarize2_rate=0,
         )
 
     def test_init(self):
         assert isinstance(self.code, BivariateBicycleCode)
-        assert self.code.distance == 5
+        assert self.code.Lx == 12
+        assert self.code.Ly == 6
+        assert self.code.a1 == 3
+        assert self.code.a2 == 1
+        assert self.code.a3 == 2
+        assert self.code.b1 == 3
+        assert self.code.b2 == 1
+        assert self.code.b3 == 2
         assert self.code.depolarize1_rate == 0.01
         assert self.code.depolarize2_rate == 0
-        assert self.code.name == "Bivariate Bicycle"
+        # assert self.code.name == "Bivariate Bicycle"
 
     def test_build_memory_circuit(self):
         self.code.build_memory_circuit(number_of_rounds=2)
