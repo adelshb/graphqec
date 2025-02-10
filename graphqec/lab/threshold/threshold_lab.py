@@ -11,14 +11,21 @@
 # limitations under the License.
 
 from __future__ import annotations
+import multiprocessing
 
-import numpy as np
+import sinter
 import matplotlib.pyplot as plt
-import pymatching
+from stimbposd import sinter_decoders
 
 from graphqec.codes.base_code import BaseCode
 
 __all__ = ["ThresholdLAB"]
+
+__available_decoders__ = {
+    "pymatching": None,
+    "fusion_blossom": None,
+    "bposd": sinter_decoders,
+}
 
 
 class ThresholdLAB:
@@ -31,10 +38,16 @@ class ThresholdLAB:
         "_error_rates",
         "_code",
         "_collected_stats",
+        "_decoder",
+        "_samples",
     )
 
     def __init__(
-        self, code: BaseCode, configurations: dict[str, any], error_rates: list[float]
+        self,
+        code: BaseCode,
+        configurations: dict[str, any],
+        error_rates: list[float],
+        decoder: str = "pymatching",
     ) -> None:
         r"""
         Initialization of the Base Code class.
@@ -42,11 +55,18 @@ class ThresholdLAB:
         :param code: The code
         :param configurations: Distances for the code.
         :param error_rates: Error rate.
+        :param decoder: The decoder
         """
 
         self._configurations = configurations
         self._code = code
         self._error_rates = error_rates
+
+        if decoder in __available_decoders__.keys():
+            self._decoder = decoder
+        else:
+            ValueError("This decoder is not available.")
+
         self._collected_stats = {}
 
     @property
@@ -77,68 +97,68 @@ class ThresholdLAB:
         """
         return self._collected_stats
 
-    @staticmethod
-    def compute_logical_errors(code: BaseCode, num_shots: int) -> int:
-        r"""
-        Sample the memory circuit and return the number of errors.
+    @property
+    def decoder(self) -> str:
+        r"""Return the decoder."""
+        return self._decoder
 
-        :param code: The code to simulate.
-        :param num_shots: The number of samples.
-        """
+    @property
+    def samples(self) -> None:
+        r"""Return samples."""
+        return self._samples
 
-        # Sample the memory circuit
-        sampler = code.memory_circuit.compile_detector_sampler()
-        detection_events, observable_flips = sampler.sample(
-            num_shots, separate_observables=True
-        )
+    def generate_sinter_tasks(self):
+        r"""Generates tasks using Stim's circuit generation."""
 
-        # Configure the decoder using the memory circuit then run the decoder
-        detector_error_model = code.memory_circuit.detector_error_model(
-            decompose_errors=False
-        )
-
-        matcher = pymatching.Matching.from_detector_error_model(detector_error_model)
-        predictions = matcher.decode_batch(detection_events)
-
-        # Count the number of errors
-        num_errors = 0
-        for shot in range(num_shots):
-            actual_for_shot = observable_flips[shot]
-            predicted_for_shot = predictions[shot]
-            if not np.array_equal(actual_for_shot, predicted_for_shot):
-                num_errors += 1
-        return num_errors
-
-    def collect_stats(self, num_shots: int) -> None:
-        r"""
-        Collect sampling statistics over ranges of distance and errors.
-
-        :param num_shots: The number of samples.
-        """
-
-        # Loop over distance range
+        # Loop over configurations
         for configuration in self.configurations:
-
-            temp_logical_error_rate = []
 
             # Loop over physical errors
             for prob_error in self.error_rates:
 
-                # Build the circuit for the code
                 code = self.code(
                     **configuration,
                     depolarize1_rate=prob_error,
                     depolarize2_rate=prob_error,
                 )
                 code.build_memory_circuit(number_of_rounds=code.distance)
+                circ = code.memory_circuit
 
-                # Get the logical error rate
-                num_errors_sampled = self.compute_logical_errors(
-                    code=code, num_shots=num_shots
-                )
-                temp_logical_error_rate.append(num_errors_sampled / num_shots)
+                metadata = {"name": code.name, "error": prob_error}
 
-            self._collected_stats[code.name] = temp_logical_error_rate
+                yield sinter.Task(circuit=circ, json_metadata=metadata)
+
+    def collect_stats(
+        self,
+        num_workers: int | None = None,
+        max_shots: int = 10**4,
+        max_errors: int = 1000,
+    ) -> None:
+        r"""
+        Collect sampling statistics over ranges of distance and errors.
+
+        :param num_shots: The number of samples.
+        """
+        if num_workers is None:
+            num_workers = multiprocessing.cpu_count() - 1
+
+        if __available_decoders__[self.decoder] is not None:
+            self._samples = sinter.collect(
+                num_workers=num_workers,
+                max_shots=max_shots,
+                max_errors=max_errors,
+                tasks=self.generate_sinter_tasks(),
+                decoders=[self.decoder],
+                custom_decoders=__available_decoders__[self.decoder](),
+            )
+        else:
+            self._samples = sinter.collect(
+                num_workers=num_workers,
+                max_shots=max_shots,
+                max_errors=max_errors,
+                tasks=self.generate_sinter_tasks(),
+                decoders=[self.decoder],
+            )
 
     def plot_stats(
         self,
@@ -156,10 +176,14 @@ class ThresholdLAB:
         :param y_max: The y_max for the plot.
         """
 
+        # Render a matplotlib plot of the data.
         fig, ax = plt.subplots(1, 1)
-
-        for code in self.collected_stats.keys():
-            ax.plot(self.error_rates, self.collected_stats[code], label=code)
+        sinter.plot_error_rate(
+            ax=ax,
+            stats=self.samples,
+            group_func=lambda stat: stat.json_metadata["name"],
+            x_func=lambda stat: stat.json_metadata["error"],
+        )
 
         if x_min is not None and x_max is not None:
             ax.set_xlim(x_min, x_max)
@@ -172,4 +196,5 @@ class ThresholdLAB:
         ax.grid(which="major")
         ax.grid(which="minor")
         ax.legend()
-        fig.set_dpi(120)
+
+        plt.show()
