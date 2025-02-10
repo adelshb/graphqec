@@ -9,6 +9,8 @@ dependencies = [
     "scipy>=1.14",
     "stim>=1.14.0",
     "pymatching>=2.2.1",
+    "fusion_blossom>=0.2.13",
+    "stimbposd",
     "jupyter>=1.1.1",
     "ipykernel>=6.29.5",
     "networkx>=3.4.2"

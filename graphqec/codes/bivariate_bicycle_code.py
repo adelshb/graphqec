@@ -95,6 +95,7 @@ class BivariateBicycleCode(BaseCode):
 
         n, k, d = self.get_parameters()
         self._name = f"Bivariate Bicycle [[{n},{k},{d}]]"
+        self._distance = 3
 
     def compute_check_matrices(self) -> None:
         r""" """
