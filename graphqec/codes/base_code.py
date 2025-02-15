@@ -24,7 +24,7 @@ from graphqec.measurement import Measurement
 from graphqec.stab import X_check, Z_check
 
 # NEW: Import your NoiseModel and a default DepolarizingNoiseModel
-from graphqec.noise_models import NoiseModel, DepolarizingNoiseModel
+from graphqec.noise_model import NoiseModel, DepolarizingNoiseModel
 
 __all__ = ["BaseCode"]
 
