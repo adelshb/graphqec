@@ -15,7 +15,9 @@ import multiprocessing
 
 import sinter
 import matplotlib.pyplot as plt
-from stimbposd import sinter_decoders
+from stimbposd import SinterDecoder_BPOSD
+from beliefmatching import BeliefMatchingSinterDecoder
+from mwpf import SinterMWPFDecoder
 
 from graphqec.codes.base_code import BaseCode
 
@@ -24,7 +26,9 @@ __all__ = ["ThresholdLAB"]
 __available_decoders__ = {
     "pymatching": None,
     "fusion_blossom": None,
-    "bposd": sinter_decoders,
+    "bposd": SinterDecoder_BPOSD,
+    "mwpf": SinterMWPFDecoder,
+    "beliefmatching": BeliefMatchingSinterDecoder,
 }
 
 
@@ -133,23 +137,36 @@ class ThresholdLAB:
         num_workers: int | None = None,
         max_shots: int = 10**4,
         max_errors: int = 1000,
+        decoder_params: dict[str, any] | None = None,
     ) -> None:
         r"""
         Collect sampling statistics over ranges of distance and errors.
 
         :param num_shots: The number of samples.
+        :param max_shots: Maximum number of shots.
+        :param max_errors: Maximum tolerated errors.
+        :param decoder_params: The optional decoder parameters.
         """
         if num_workers is None:
             num_workers = multiprocessing.cpu_count() - 1
 
         if __available_decoders__[self.decoder] is not None:
+
+            if decoder_params is None:
+                custom_decoder = {self.decoder: __available_decoders__[self.decoder]()}
+            else:
+                custom_decoder = {
+                    self.decoder: __available_decoders__[self.decoder](**decoder_params)
+                }
+
             self._samples = sinter.collect(
                 num_workers=num_workers,
                 max_shots=max_shots,
                 max_errors=max_errors,
                 tasks=self.generate_sinter_tasks(),
                 decoders=[self.decoder],
-                custom_decoders=__available_decoders__[self.decoder](),
+                custom_decoders=custom_decoder,
+                # custom_decoders= { "mwpf": SinterMWPFDecoder(cluster_node_limit=50) }
             )
         else:
             self._samples = sinter.collect(
