@@ -72,22 +72,24 @@ rep.memory_circuit.diagram()
 ```py
 from graphqec import RepetitionCode, ThresholdLAB
 
-# Initialize the Threshold LAB instance
 th = ThresholdLAB(
-    distances= [3, 5, 7, 11],
-    code=RepetitionCode,
-    error_rates= np.linspace(0, 0.1, 10)
+    configurations = [{"distance": d} for d in [3, 5, 7, 11]],
+    code = RepetitionCode,
+    error_rates = np.linspace(0, 0.2, 10),
+    decoder='pymatching'
 )
 
-# Sampling and estimating logical error rates via Monte Carlo
-th.collect_stats(num_shots=10**4)
+th.collect_stats(
+    num_workers = 4,
+    max_shots = 10**5,
+    max_errors= 1000
+)
 
-# Plotting the collected statistics
 th.plot_stats(
-    x_min = 3e-2,
-    x_max = 1e-1,
-    y_min = 1e-3,
-    y_max = 5e-1
+    x_min = 2e-2,
+    x_max = 2e-1,
+    y_min = 1e-4,
+    y_max = 8e-1
 )
 ```
 
