@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from graphqec.codes.base_code import BaseCode
 
-__all__ = ["CssCode"]
+__all__ = ["CssCode", "commutation_test"]
 
 
 def commutation_test(Hx: list[list[int]], Hz: list[list[int]]) -> bool:
@@ -22,6 +22,8 @@ def commutation_test(Hx: list[list[int]], Hz: list[list[int]]) -> bool:
     function for taking two linear codes and determining if they satisfy
     the necessary constraints for defining a CSS code
     """
+
+    assert len(Hx[0]) == len(Hz[0])
 
     return all(
         [(not sum([a * b for (a, b) in zip(hx, hz)]) % 2) for hx in Hx for hz in Hz]
@@ -46,41 +48,85 @@ class CssCode(BaseCode):
         Initialize the CSS code instance.
         """
 
-        # self._logic_check = [0]
+        assert commutation_test(Hx, Hz)
+
         self.Hx = Hx
         self.Hz = Hz
+
+        self.nqubits = len(Hz[0])
+
+        self._logic_check = []
 
         super().__init__(*args, **kwargs)
 
         self._name = (
-            f"CSS [[{2*self.distance-1},{len(self._logic_check)},{self.distance}]]"
+            # f"CSS [[{self.nqubits},{len(self._logic_check)},{self.distance}]]"
+            f"CSS [[{self.nqubits},{len(self._logic_check)}]]"
         )
 
     def build_graph(self) -> None:
         r"""
-        Build the Tanner graph for the CSS code
+        Build the Tanner graph for the CSS code.
+        Qubit nodes labels: 0, 1,..., nqubits-1
+        Xcheck nodes labels: nqubits, nqubits+1,...,nqubits+nxchecks-1
+        Zcheck nodes labels: nqubits+nxchecks,...,nqubits+nxchecks+nzchecks-1
+
+        Edges are added based on the X and Z check matrices
         """
 
-        pass
+        self._graph.add_nodes_from(
+            [
+                (i, {"type": "data", "label": None, "label_id": i})
+                for i in range(self.nqubits)
+            ]
+        )
+        self._graph.add_nodes_from(
+            [
+                (
+                    i,
+                    {"type": "check", "label": "X", "label_id": i},
+                )
+                for i in range(self.nqubits, self.nqubits + len(self.Hx))
+            ]
+        )
+        self._graph.add_nodes_from(
+            [
+                (
+                    i,
+                    {"type": "check", "label": "Z", "label_id": i},
+                )
+                for i in range(
+                    self.nqubits + len(self.Hx),
+                    self.nqubits + len(self.Hx) + len(self.Hz),
+                )
+            ]
+        )
 
-        # self._graph.add_nodes_from(
-        #     [
-        #         (i, {"type": "data", "label": None, "coords": (i, i)})
-        #         for i in range(self.distance)
-        #     ]
-        # )
-        # self._graph.add_nodes_from(
-        #     [
-        #         (
-        #             i + self.distance,
-        #             {"type": "check", "label": "Z", "coords": (i + 0.5, i + 0.5)},
-        #         )
-        #         for i in range(self.distance - 1)
-        #     ]
-        # )
-        # self._graph.add_weighted_edges_from(
-        #     [(i, i + self.distance, 1) for i in range(self.distance - 1)]
-        # )
-        # self._graph.add_weighted_edges_from(
-        #     [(i, i + self.distance - 1, 2) for i in range(1, self.distance)]
-        # )
+        for row_index in range(len(self.Hx)):
+
+            xrow = self.Hx[row_index]
+            suppx = []
+
+            for qcol in range(self.nqubits):
+                if xrow[qcol]:
+                    suppx.append(qcol)
+
+            self._graph.add_weighted_edges_from(
+                [(suppx[i], self.nqubits + row_index, i) for i in range(len(suppx))]
+            )
+
+        for row_index in range(len(self.Hz)):
+
+            zrow = self.Hz[row_index]
+            suppz = []
+
+            for qcol in range(self.nqubits):
+                if zrow[qcol]:
+                    suppz.append(qcol)
+
+            self._graph.add_weighted_edges_from(
+                [
+                    (qcol, self.nqubits + len(self.Hx) + row_index, i)
+                    for i in range(len(suppz))
+                ]
+            )
