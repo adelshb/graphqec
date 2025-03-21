@@ -17,6 +17,17 @@ from graphqec.codes.base_code import BaseCode
 __all__ = ["CssCode"]
 
 
+def commutation_test(Hx: list[list[int]], Hz: list[list[int]]) -> bool:
+    r"""
+    function for taking two linear codes and determining if they satisfy
+    the necessary constraints for defining a CSS code
+    """
+
+    return all(
+        [(not sum([a * b for (a, b) in zip(hx, hz)]) % 2) for hx in Hx for hz in Hz]
+    )
+
+
 class CssCode(BaseCode):
     r"""
     A class for a generic CSS code specified by a pair of linear codes subject
@@ -26,6 +37,8 @@ class CssCode(BaseCode):
 
     def __init__(
         self,
+        Hx: list[list[int]],
+        Hz: list[list[int]],
         *args,
         **kwargs,
     ) -> None:
@@ -34,6 +47,8 @@ class CssCode(BaseCode):
         """
 
         # self._logic_check = [0]
+        self.Hx = Hx
+        self.Hz = Hz
 
         super().__init__(*args, **kwargs)
 
