@@ -13,21 +13,9 @@
 from __future__ import annotations
 
 from graphqec.codes.base_code import BaseCode
+from graphqec.codes.code_tools import commutation_test
 
-__all__ = ["CssCode", "commutation_test"]
-
-
-def commutation_test(Hx: list[list[int]], Hz: list[list[int]]) -> bool:
-    r"""
-    function for taking two linear codes and determining if they satisfy
-    the necessary constraints for defining a CSS code
-    """
-
-    assert len(Hx[0]) == len(Hz[0])
-
-    return all(
-        [(not sum([a * b for (a, b) in zip(hx, hz)]) % 2) for hx in Hx for hz in Hz]
-    )
+__all__ = ["CssCode"]
 
 
 class CssCode(BaseCode):
@@ -130,3 +118,20 @@ class CssCode(BaseCode):
                     for i in range(len(suppz))
                 ]
             )
+
+    def compute_x_logicals(self) -> list[list[int]]:
+        r"""
+        Function for computing a set of logical operators for the input
+        parity check operators.
+        Find the image and kernel for each linear code.
+        """
+
+        rrHx = []
+
+        for qub_col in range(self.nqubits):
+
+            for H in [self.Hx, self.Hz]:
+
+                pass
+
+        return rrHx
