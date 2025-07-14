@@ -1,7 +1,7 @@
 # Added
 .DS_Store
 workspace.ipynb
-logic_ops.ipynb
+notebooks/logic_ops.ipynb
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
