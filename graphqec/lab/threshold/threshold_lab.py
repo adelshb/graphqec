@@ -32,10 +32,15 @@ class ThresholdLAB:
         "_code",
         "_collected_stats",
         "_code_name",
+        "_logic_check",
     )
 
     def __init__(
-        self, code: BaseCode, distances: list[int], error_rates: list[float]
+        self,
+        code: BaseCode,
+        distances: list[int],
+        error_rates: list[float],
+        logic_check: str = "Z",
     ) -> None:
         r"""
         Initialization of the Base Code class.
@@ -50,6 +55,7 @@ class ThresholdLAB:
         self._code_name = code().name
         self._error_rates = error_rates
         self._collected_stats = {}
+        self._logic_check = logic_check
 
     @property
     def distances(self) -> list[int]:
@@ -85,6 +91,13 @@ class ThresholdLAB:
         The code name.
         """
         return self._code_name
+
+    @property
+    def logic_check(self) -> str:
+        r"""
+        The logic check type.
+        """
+        return self._logic_check
 
     @staticmethod
     def compute_logical_errors(code: BaseCode, num_shots: int) -> int:
