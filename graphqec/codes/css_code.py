@@ -43,7 +43,7 @@ class CssCode(BaseCode):
 
         self.nqubits = len(Hz[0])
 
-        self._logic_check = []
+        self._logic_check = self.compute_x_logicals()
 
         super().__init__(*args, **kwargs)
 

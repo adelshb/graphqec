@@ -12,7 +12,13 @@
 
 from __future__ import annotations
 
-__all__ = ["commutation_test", "row_sort", "row_echelon_form", "dependency_check"]
+__all__ = [
+    "commutation_test",
+    "row_sort_no_dupes",
+    "row_echelon_form",
+    "dependency_check",
+    "row_order",
+]
 
 
 def commutation_test(Hx: list[list[int]], Hz: list[list[int]]) -> bool:
@@ -28,76 +34,13 @@ def commutation_test(Hx: list[list[int]], Hz: list[list[int]]) -> bool:
     )
 
 
-def row_sort(check_matrix: list[list[int]]) -> list[list[int]]:
-    r"""
-    A function sorting a list of check elements based on the
-    minimum column index on which the checks act. This is
-    done recursively with a merge-sort algorithm.
-    """
-
-    if len(check_matrix) == 1:
-        # return [list(check_matrix[0])]
-        return [check_matrix[0]]
-
-    elif len(check_matrix) == 2:
-        lr_sum = [not (a + b) % 2 for (a, b) in zip(check_matrix[0], check_matrix[1])]
-        if all(lr_sum):
-            return [check_matrix[0], check_matrix[1]]
-            # return [list(check_matrix[0]),list(check_matrix[1])]
-        else:
-            first_one = lr_sum.index(False)
-            if check_matrix[0][first_one]:
-                return [check_matrix[0], check_matrix[1]]
-                # return [list(check_matrix[0]),list(check_matrix[1])]
-            else:
-                return [check_matrix[1], check_matrix[0]]
-                # return [list(check_matrix[1]),list(check_matrix[0])]
-    else:
-        print("length of list = " + str(len(check_matrix)))
-        print(check_matrix[: int(len(check_matrix) / 2)])
-
-        left_half = row_sort(check_matrix[: int((len(check_matrix) / 2)) + 1])
-        right_half = row_sort(check_matrix[int((len(check_matrix) / 2)) + 1 :])
-
-        row_sorted = []
-
-        while len(left_half) > 0 and len(right_half) > 0:
-            print(len(left_half), len(right_half))
-            left_elem = left_half[0]
-            righ_elem = right_half[0]
-            # form the sum of the two check rows
-            lr_sum = [a == b for (a, b) in zip(left_elem, righ_elem)]
-            # identify the first index where the two elements disagree
-            if all(lr_sum):
-                return row_sorted.extend([left_half.pop(0), right_half.pop(0)])
-            else:
-                first_one = lr_sum.index(False)
-
-                if left_elem[first_one]:
-                    row_sorted.append(left_half.pop(0))
-                else:
-                    row_sorted.append(right_half.pop(0))
-
-        return row_sorted.extend(right_half + left_half)
-
-
 def row_echelon_form(check_matrix: list[list[int]]) -> list[list[int]]:
     r"""
     function taking in a binary check matrix and returns an
     equivalent check matrix in row reduced echelon form.
     """
-    # zero_col = list(check_matrix[:][0])
-    # pivot_row = zero_col.index(1)
 
-    if len(check_matrix) == 1:
-        return check_matrix
-    else:
-        recm = row_echelon_form(check_matrix[:-1])
-        next_row = check_matrix[-1]
-        if dependency_check(recm, next_row):
-            return recm
-        else:
-            return recm.append(next_row)
+    pass
 
 
 def dependency_check(ref_matrix: list[list[int]], check_row: list[int]) -> bool:
@@ -106,9 +49,56 @@ def dependency_check(ref_matrix: list[list[int]], check_row: list[int]) -> bool:
     be written as a linear combination of the rows of the matrix.
     """
 
-    if len(ref_matrix) == 1:
-        return check_row in ref_matrix
+    pass
 
+
+def row_sort_no_dupes(check_matrix: list[list[int]]) -> list[list[int]]:
+    r"""
+    Function to sort and remove duplicate rows (but does not remove redundancies)
+    """
+
+    num = len(check_matrix)
+    if num < 2:
+        return check_matrix
     else:
+        sorted_full = []
 
-        return dependency_check(ref_matrix[:-1], check_row)
+        halfs = [
+            row_sort_no_dupes(check_matrix[: int(num / 2)]),
+            row_sort_no_dupes(check_matrix[int(num / 2) :]),
+        ]
+
+        while min(len(halfs[0]), len(halfs[1])) > 0:
+            if not sum([(a + b) % 2 for (a, b) in zip(halfs[0][0], halfs[1][0])]):
+                sorted_full.append(halfs[0][0].pop(0))
+                del halfs[1][0]
+            else:
+                firstRow = row_order(halfs[0][0], halfs[1][0])
+                sorted_full.append(halfs[firstRow][0].pop(0))
+
+        return sorted_full + halfs[0] + halfs[1]
+
+
+def row_order(row1: list[int], row2: list[int]) -> tuple[int]:
+    r"""
+    An ordering of two binary vectors based on the minimum unique instance of a 1 value.
+
+    :input row1: list of 0's and 1's
+    :input row2: list of 0's and 1's
+
+    :output: one of three tuples based on the relationship of the two rows.
+      (0,0) indicates the two strings are identical
+      (1,0) indicates that row1 comes before row2 in the order
+      (0,1) indicates that row2 comes before row1 in the order
+    """
+
+    assert len(row1) == len(row2)
+
+    row1p2 = [(a + b) % 2 for (a, b) in zip(row1, row2)]
+    assert sum(row1p2)
+
+    firstOne = row1p2.index(1)
+    if row1[firstOne]:
+        return 0
+    else:
+        return 1
