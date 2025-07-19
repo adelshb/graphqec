@@ -174,16 +174,29 @@ class BaseCode(ABC):
         # Initialization
         self._memory_circuit = Circuit()
 
-        self._memory_circuit.append("R", all_qubits)
-        self._memory_circuit.append("DEPOLARIZE1", all_qubits, self.depolarize1_rate)
+        if logic_check == "Z":
+            self._memory_circuit.append("R", all_qubits)
+            self._memory_circuit.append(
+                "DEPOLARIZE1", all_qubits, self.depolarize1_rate
+            )
+        elif logic_check == "X":
+            self._memory_circuit.append("RX", all_qubits)
+            self._memory_circuit.append(
+                "DEPOLARIZE1", all_qubits, self.depolarize1_rate
+            )
 
         self.append_stab_circuit(
             round=0, data_qubits=data_qubits, check_qubits=check_qubits
         )
 
-        for qz in check_qubits["Z-check"]:
-            rec = self.get_target_rec(qubit=qz, round=0)
-            self._memory_circuit.append("DETECTOR", [target_rec(rec)])
+        if logic_check == "Z":
+            for qz in check_qubits["Z-check"]:
+                rec = self.get_target_rec(qubit=qz, round=0)
+                self._memory_circuit.append("DETECTOR", [target_rec(rec)])
+        elif logic_check == "X":
+            for qx in check_qubits["X-check"]:
+                rec = self.get_target_rec(qubit=qx, round=0)
+                self._memory_circuit.append("DETECTOR", [target_rec(rec)])
 
         # Body rounds
         for round in range(1, number_of_rounds):
@@ -227,7 +240,7 @@ class BaseCode(ABC):
                 self._memory_circuit.append("DETECTOR", [target_rec(r) for r in recs])
 
         elif logic_check == "X":
-
+            # To do: add noise for hadamard
             self._memory_circuit.append("MX", data_qubits)
             for i, q in enumerate(data_qubits):
                 self.add_outcome(
@@ -253,7 +266,7 @@ class BaseCode(ABC):
         # Adding the comparison with the expected state
         recs = [
             self.get_target_rec(qubit=q, round=number_of_rounds)
-            for q in self.logic_check
+            for q in self.logic_check[logic_check]
         ]
         recs_str = " ".join(f"rec[{rec}]" for rec in recs)
         self._memory_circuit.append_from_stim_program_text(
