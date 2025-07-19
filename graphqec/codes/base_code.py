@@ -64,12 +64,12 @@ class BaseCode(ABC):
         self._graph = nx.Graph()
         self.build_graph()
 
-    @property
-    def name(self) -> str:
+    @classmethod
+    def name(cls) -> str:
         r"""
         The name of the code.
         """
-        return self._name
+        return cls.__name__
 
     @property
     def distance(self) -> int:
@@ -128,9 +128,9 @@ class BaseCode(ABC):
         return self._checks
 
     @property
-    def logic_check(self) -> int:
+    def logic_check(self) -> dict:
         r"""
-        Return logic check.
+        The logic check type.
         """
         return self._logic_check
 

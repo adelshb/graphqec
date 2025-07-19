@@ -52,7 +52,7 @@ class ThresholdLAB:
 
         self._distances = distances
         self._code = code
-        self._code_name = code().name
+        self._code_name = code.name()
         self._error_rates = error_rates
         self._collected_stats = {}
         self._logic_check = logic_check
@@ -131,7 +131,7 @@ class ThresholdLAB:
                 num_errors += 1
         return num_errors
 
-    def collect_stats(self, num_shots: int) -> None:
+    def collect_stats(self, num_shots: int, logic_check: str = "Z") -> None:
         r"""Collect sampling statistics over ranges of distance and errors."""
 
         # Loop over distance range
@@ -148,7 +148,15 @@ class ThresholdLAB:
                     depolarize1_rate=prob_error,
                     depolarize2_rate=prob_error,
                 )
-                code.build_memory_circuit(number_of_rounds=distance * 3)
+
+                if logic_check not in code.logic_check.keys():
+                    raise ValueError(
+                        f"Logic check {logic_check} is not supported by the code {self.code_name}."
+                    )
+
+                code.build_memory_circuit(
+                    number_of_rounds=distance * 3, logic_check="Z"
+                )
 
                 # Get the logical error rate
                 num_errors_sampled = self.compute_logical_errors(
