@@ -15,7 +15,7 @@ from __future__ import annotations
 __all__ = [
     "commutation_test",
     "row_sort_no_dupes",
-    "row_echelon_form",
+    "row_reduced_echelon_form",
     "dependency_check",
     "row_order",
 ]
@@ -34,15 +34,6 @@ def commutation_test(Hx: list[list[int]], Hz: list[list[int]]) -> bool:
     )
 
 
-def row_echelon_form(check_matrix: list[list[int]]) -> list[list[int]]:
-    r"""
-    function taking in a binary check matrix and returns an
-    equivalent check matrix in row reduced echelon form.
-    """
-
-    pass
-
-
 def dependency_check(ref_matrix: list[list[int]], check_row: list[int]) -> bool:
     r"""
     function taking in a rref matrix and a vector and tests if the vector can
@@ -50,6 +41,38 @@ def dependency_check(ref_matrix: list[list[int]], check_row: list[int]) -> bool:
     """
 
     pass
+
+
+def row_reduced_echelon_form(check_matrix: list[list[int]]) -> list[list[int]]:
+    r"""
+    function taking in a binary check matrix and returns an
+    equivalent check matrix in row reduced echelon form, that is, with all
+    redundancies eliminated.
+    """
+
+    pass
+
+
+#     proto_ref_matrix = row_sort_no_dupes(check_matrix)
+#     rindex = 0
+#     startRow = proto_ref_matrix[rindex]
+#     col_marker = startRow.index(1)
+
+#     ref_matrix = [startRow]
+
+#     while rindex < len(check_matrix):
+
+#         while proto_ref_matrix[rindex][col_marker]:
+#             row = [(a + b) % 2 for (a, b) in zip(proto_ref_matrix[rindex], startRow)]
+
+#             if sum(row):
+#                 ref_matrix.append(row)
+
+#             rindex += 1
+
+#         proto_ref_matrix_update = row_sort_no_dupes(check_matrix[rindex:])
+#         startRow_update = proto_ref_matrix_update[0]
+#         col_marker_update = startRow_update.index(1)
 
 
 def row_sort_no_dupes(check_matrix: list[list[int]]) -> list[list[int]]:
@@ -79,17 +102,15 @@ def row_sort_no_dupes(check_matrix: list[list[int]]) -> list[list[int]]:
         return sorted_full + halfs[0] + halfs[1]
 
 
-def row_order(row1: list[int], row2: list[int]) -> tuple[int]:
+def row_order(row1: list[int], row2: list[int]) -> int:
     r"""
     An ordering of two binary vectors based on the minimum unique instance of a 1 value.
 
     :input row1: list of 0's and 1's
     :input row2: list of 0's and 1's
 
-    :output: one of three tuples based on the relationship of the two rows.
-      (0,0) indicates the two strings are identical
-      (1,0) indicates that row1 comes before row2 in the order
-      (0,1) indicates that row2 comes before row1 in the order
+    :output: binary value indicating whether row1 (0) or row2 (1) comes first
+        in the ordering
     """
 
     assert len(row1) == len(row2)
@@ -98,7 +119,5 @@ def row_order(row1: list[int], row2: list[int]) -> tuple[int]:
     assert sum(row1p2)
 
     firstOne = row1p2.index(1)
-    if row1[firstOne]:
-        return 0
-    else:
-        return 1
+
+    return int(not row1[firstOne])
