@@ -30,7 +30,8 @@ class BaseCode(ABC):
     """
 
     __slots__ = (
-        "_name" "_distance",
+        "_name",
+        "_distance",
         "_memory_circuit",
         "_depolarize1_rate",
         "_depolarize2_rate",
@@ -42,7 +43,6 @@ class BaseCode(ABC):
 
     def __init__(
         self,
-        distance: int = 3,
         depolarize1_rate: float = 0,
         depolarize2_rate: float = 0,
     ) -> None:
@@ -54,23 +54,22 @@ class BaseCode(ABC):
         :param depolarize2_rate: Two qubit depolarization rate.
         """
 
-        self._distance = distance
         self._depolarize1_rate = depolarize1_rate
         self._depolarize2_rate = depolarize2_rate
         self._memory_circuit: Circuit
         self._measurement = Measurement()
         self._checks: list[str]
-        self._logic_check: list[str]
+        self._logic_check: dict
 
         self._graph = nx.Graph()
         self.build_graph()
 
-    @property
-    def name(self) -> str:
+    @classmethod
+    def name(cls) -> str:
         r"""
         The name of the code.
         """
-        return self._name
+        return cls.__name__
 
     @property
     def distance(self) -> int:
@@ -129,9 +128,9 @@ class BaseCode(ABC):
         return self._checks
 
     @property
-    def logic_check(self) -> int:
+    def logic_check(self) -> dict:
         r"""
-        Return logic check.
+        The logic check type.
         """
         return self._logic_check
 
@@ -140,13 +139,19 @@ class BaseCode(ABC):
         r"""
         Build the graph representing the qubit network.
         """
+        NotImplementedError("This method should be implemented by subclasses.")
 
-    def build_memory_circuit(self, number_of_rounds: int) -> None:
+    def build_memory_circuit(
+        self, number_of_rounds: int, logic_check: str = "Z"
+    ) -> None:
         r"""
         Build and return a Stim Circuit object implementing a memory for the given time.
 
         :param number_of_rounds: The number of rounds in the memory.
         """
+
+        if logic_check not in self.logic_check.keys():
+            raise ValueError(f"Logic check must be one of {self.logic_check.keys()}")
 
         all_qubits = [q for q in self.graph.nodes()]
         data_qubits = [
@@ -169,16 +174,29 @@ class BaseCode(ABC):
         # Initialization
         self._memory_circuit = Circuit()
 
-        self._memory_circuit.append("R", all_qubits)
-        self._memory_circuit.append("DEPOLARIZE1", all_qubits, self.depolarize1_rate)
+        if logic_check == "Z":
+            self._memory_circuit.append("R", all_qubits)
+            self._memory_circuit.append(
+                "DEPOLARIZE1", all_qubits, self.depolarize1_rate
+            )
+        elif logic_check == "X":
+            self._memory_circuit.append("RX", all_qubits)
+            self._memory_circuit.append(
+                "DEPOLARIZE1", all_qubits, self.depolarize1_rate
+            )
 
         self.append_stab_circuit(
             round=0, data_qubits=data_qubits, check_qubits=check_qubits
         )
 
-        for qz in check_qubits["Z-check"]:
-            rec = self.get_target_rec(qubit=qz, round=0)
-            self._memory_circuit.append("DETECTOR", [target_rec(rec)])
+        if logic_check == "Z":
+            for qz in check_qubits["Z-check"]:
+                rec = self.get_target_rec(qubit=qz, round=0)
+                self._memory_circuit.append("DETECTOR", [target_rec(rec)])
+        elif logic_check == "X":
+            for qx in check_qubits["X-check"]:
+                rec = self.get_target_rec(qubit=qx, round=0)
+                self._memory_circuit.append("DETECTOR", [target_rec(rec)])
 
         # Body rounds
         for round in range(1, number_of_rounds):
@@ -197,30 +215,58 @@ class BaseCode(ABC):
 
         # Finalization
         self._memory_circuit.append("DEPOLARIZE1", data_qubits, self.depolarize1_rate)
-        self._memory_circuit.append("M", data_qubits)
+        if logic_check == "Z":
 
-        for i, q in enumerate(data_qubits):
-            self.add_outcome(
-                outcome=target_rec(-1 - i), qubit=q, round=number_of_rounds, type="data"
-            )
+            self._memory_circuit.append("M", data_qubits)
+            for i, q in enumerate(data_qubits):
+                self.add_outcome(
+                    outcome=target_rec(-1 - i),
+                    qubit=q,
+                    round=number_of_rounds,
+                    type="data",
+                )
 
-        # Syndrome extraction grouping data qubits
-        for qz in check_qubits["Z-check"]:
+            # Syndrome extraction grouping data qubits
+            for qz in check_qubits["Z-check"]:
 
-            qz_adjacent_data_qubits = self.graph.neighbors(qz)
+                qz_adjacent_data_qubits = self.graph.neighbors(qz)
 
-            recs = [
-                self.get_target_rec(qubit=qd, round=number_of_rounds)
-                for qd in qz_adjacent_data_qubits
-            ]
-            recs += [self.get_target_rec(qubit=qz, round=number_of_rounds - 1)]
+                recs = [
+                    self.get_target_rec(qubit=qd, round=number_of_rounds)
+                    for qd in qz_adjacent_data_qubits
+                ]
+                recs += [self.get_target_rec(qubit=qz, round=number_of_rounds - 1)]
 
-            self._memory_circuit.append("DETECTOR", [target_rec(r) for r in recs])
+                self._memory_circuit.append("DETECTOR", [target_rec(r) for r in recs])
+
+        elif logic_check == "X":
+            # To do: add noise for hadamard
+            self._memory_circuit.append("MX", data_qubits)
+            for i, q in enumerate(data_qubits):
+                self.add_outcome(
+                    outcome=target_rec(-1 - i),
+                    qubit=q,
+                    round=number_of_rounds,
+                    type="data",
+                )
+
+            # Syndrome extraction grouping data qubits
+            for qx in check_qubits["X-check"]:
+
+                qx_adjacent_data_qubits = self.graph.neighbors(qx)
+
+                recs = [
+                    self.get_target_rec(qubit=qd, round=number_of_rounds)
+                    for qd in qx_adjacent_data_qubits
+                ]
+                recs += [self.get_target_rec(qubit=qx, round=number_of_rounds - 1)]
+
+                self._memory_circuit.append("DETECTOR", [target_rec(r) for r in recs])
 
         # Adding the comparison with the expected state
         recs = [
             self.get_target_rec(qubit=q, round=number_of_rounds)
-            for q in self.logic_check
+            for q in self.logic_check[logic_check]
         ]
         recs_str = " ".join(f"rec[{rec}]" for rec in recs)
         self._memory_circuit.append_from_stim_program_text(

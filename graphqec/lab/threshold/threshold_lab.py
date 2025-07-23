@@ -32,10 +32,15 @@ class ThresholdLAB:
         "_code",
         "_collected_stats",
         "_code_name",
+        "_logic_check",
     )
 
     def __init__(
-        self, code: BaseCode, distances: list[int], error_rates: list[float]
+        self,
+        code: BaseCode,
+        distances: list[int],
+        error_rates: list[float],
+        logic_check: str = "Z",
     ) -> None:
         r"""
         Initialization of the Base Code class.
@@ -47,9 +52,10 @@ class ThresholdLAB:
 
         self._distances = distances
         self._code = code
-        self._code_name = code().name
+        self._code_name = code.name()
         self._error_rates = error_rates
         self._collected_stats = {}
+        self._logic_check = logic_check
 
     @property
     def distances(self) -> list[int]:
@@ -86,6 +92,13 @@ class ThresholdLAB:
         """
         return self._code_name
 
+    @property
+    def logic_check(self) -> str:
+        r"""
+        The logic check type.
+        """
+        return self._logic_check
+
     @staticmethod
     def compute_logical_errors(code: BaseCode, num_shots: int) -> int:
         r"""
@@ -118,7 +131,7 @@ class ThresholdLAB:
                 num_errors += 1
         return num_errors
 
-    def collect_stats(self, num_shots: int) -> None:
+    def collect_stats(self, num_shots: int, logic_check: str = "Z") -> None:
         r"""Collect sampling statistics over ranges of distance and errors."""
 
         # Loop over distance range
@@ -135,7 +148,15 @@ class ThresholdLAB:
                     depolarize1_rate=prob_error,
                     depolarize2_rate=prob_error,
                 )
-                code.build_memory_circuit(number_of_rounds=distance * 3)
+
+                if logic_check not in code.logic_check.keys():
+                    raise ValueError(
+                        f"Logic check {logic_check} is not supported by the code {self.code_name}."
+                    )
+
+                code.build_memory_circuit(
+                    number_of_rounds=distance * 3, logic_check="Z"
+                )
 
                 # Get the logical error rate
                 num_errors_sampled = self.compute_logical_errors(
