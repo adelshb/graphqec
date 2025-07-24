@@ -44,6 +44,8 @@ class ThresholdLAB:
         "_collected_stats",
         "_decoder",
         "_samples",
+        "_code_name",
+        "_logic_check",
     )
 
     def __init__(
@@ -52,6 +54,7 @@ class ThresholdLAB:
         configurations: dict[str, any],
         error_rates: list[float],
         decoder: str = "pymatching",
+        logic_check: str = "Z",
     ) -> None:
         r"""
         Initialization of the Base Code class.
@@ -64,6 +67,7 @@ class ThresholdLAB:
 
         self._configurations = configurations
         self._code = code
+        self._code_name = code.name()
         self._error_rates = error_rates
 
         if decoder in __available_decoders__.keys():
@@ -72,6 +76,7 @@ class ThresholdLAB:
             ValueError("This decoder is not available.")
 
         self._collected_stats = {}
+        self._logic_check = logic_check
 
     @property
     def configurations(self) -> list[int]:
@@ -111,7 +116,13 @@ class ThresholdLAB:
         r"""Return samples."""
         return self._samples
 
-    def generate_sinter_tasks(self):
+    def logic_check(self) -> str:
+        r"""
+        The logic check type.
+        """
+        return self._logic_check
+
+    def generate_sinter_tasks(self, logic_check: str = "Z") -> sinter.TaskGenerator:
         r"""Generates tasks using Stim's circuit generation."""
 
         # Loop over configurations
@@ -125,11 +136,17 @@ class ThresholdLAB:
                     depolarize1_rate=prob_error,
                     depolarize2_rate=prob_error,
                 )
-                code.build_memory_circuit(number_of_rounds=code.distance)
+
+                if logic_check not in code.logic_check.keys():
+                    raise ValueError(
+                        f"Logic check {logic_check} is not supported by {code.name} code."
+                    )
+
+                code.build_memory_circuit(
+                    number_of_rounds=code.distance, logic_check=logic_check
+                )
                 circ = code.memory_circuit
-
                 metadata = {"name": code.name, "error": prob_error}
-
                 yield sinter.Task(circuit=circ, json_metadata=metadata)
 
     def collect_stats(
