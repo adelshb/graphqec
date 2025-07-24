@@ -29,7 +29,7 @@ class UnrotatedSurfaceCode(BaseCode):
         **kwargs,
     ) -> None:
         r"""
-        Initialize the Rotated Surface Code instance.
+        Initialize the Unrotated Surface Code instance.
         """
 
         self._distance = distance
