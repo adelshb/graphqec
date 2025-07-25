@@ -63,7 +63,7 @@ rep = RepetitionCode(
 )
 
 # At this stage the Stim circuit is built
-rep.build_memory_circuit(number_of_rounds=2)
+rep.build_memory_circuit(number_of_rounds=2, logic_check="Z")
 rep.memory_circuit.diagram()
 ```
 
@@ -76,13 +76,14 @@ th = ThresholdLAB(
     configurations = [{"distance": d} for d in [3, 5, 7, 11]],
     code = RepetitionCode,
     error_rates = np.linspace(0, 0.2, 10),
-    decoder='pymatching'
+    decoder='pymatching',
 )
 
 th.collect_stats(
     num_workers = 4,
     max_shots = 10**5,
-    max_errors= 1000
+    max_errors= 1000,
+    logic_check="Z"
 )
 
 th.plot_stats(
