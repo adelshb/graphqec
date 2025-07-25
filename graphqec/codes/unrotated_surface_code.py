@@ -33,7 +33,7 @@ class UnrotatedSurfaceCode(BaseCode):
         """
 
         self._distance = distance
-        self._name = "Unrotated Surface"
+        self._name = f"Unrotated Surface [[{(2*self.distance-1)**2},1,{self.distance}]]"
         self._checks = ["Z-check", "X-check"]
 
         super().__init__(*args, **kwargs)
@@ -49,7 +49,6 @@ class UnrotatedSurfaceCode(BaseCode):
         """
 
         # Add the nodes for the data qubits
-
         data_qubits_coords = []
 
         for row in range(2 * self.distance - 1):
@@ -58,7 +57,7 @@ class UnrotatedSurfaceCode(BaseCode):
                     data_qubits_coords.append((col, row))
 
         data = [
-            (i, {"type": "data", "coords": data_qubits_coords[i]})
+            (i, {"type": "data", "label": None, "coords": data_qubits_coords[i]})
             for i in range(len(data_qubits_coords))
         ]
         self._graph.add_nodes_from(data)
@@ -72,7 +71,10 @@ class UnrotatedSurfaceCode(BaseCode):
                     x_qubits_coords.append((row, col))
 
         x_check = [
-            (i + len(data), {"type": "X-check", "coords": x_qubits_coords[i]})
+            (
+                i + len(data),
+                {"type": "check", "label": "X", "coords": x_qubits_coords[i]},
+            )
             for i in range(len(x_qubits_coords))
         ]
         self._graph.add_nodes_from(x_check)
@@ -101,7 +103,7 @@ class UnrotatedSurfaceCode(BaseCode):
         z_check = [
             (
                 i + len(data) + len(x_check),
-                {"type": "Z-check", "coords": z_qubits_coords[i]},
+                {"type": "check", "label": "Z", "coords": z_qubits_coords[i]},
             )
             for i in range(len(z_qubits_coords))
         ]

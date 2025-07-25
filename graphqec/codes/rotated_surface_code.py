@@ -33,7 +33,7 @@ class RotatedSurfaceCode(BaseCode):
         """
 
         self._distance = distance
-        self._name = "Rotated Surface"
+        self._name = f"Rotated Surface [[{self.distance**2},1,{self.distance}]]"
         self._checks = ["Z-check", "X-check"]
 
         super().__init__(*args, **kwargs)

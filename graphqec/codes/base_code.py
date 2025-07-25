@@ -70,12 +70,12 @@ class BaseCode(ABC):
             nx.get_edge_attributes(self.graph, "weight").values()
         )
 
-    @classmethod
-    def name(cls) -> str:
+    @property
+    def name(self) -> str:
         r"""
         The name of the code.
         """
-        return cls.__name__
+        return self._name
 
     @property
     def distance(self) -> int:

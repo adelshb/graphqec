@@ -44,7 +44,6 @@ class ThresholdLAB:
         "_collected_stats",
         "_decoder",
         "_samples",
-        "_code_name",
         "_logic_check",
     )
 
@@ -67,7 +66,6 @@ class ThresholdLAB:
 
         self._configurations = configurations
         self._code = code
-        self._code_name = code.name()
         self._error_rates = error_rates
 
         if decoder in __available_decoders__.keys():
@@ -145,9 +143,8 @@ class ThresholdLAB:
                 code.build_memory_circuit(
                     number_of_rounds=code.distance, logic_check=logic_check
                 )
-                circ = code.memory_circuit
                 metadata = {"name": code.name, "error": prob_error}
-                yield sinter.Task(circuit=circ, json_metadata=metadata)
+                yield sinter.Task(circuit=code.memory_circuit, json_metadata=metadata)
 
     def collect_stats(
         self,
@@ -155,6 +152,7 @@ class ThresholdLAB:
         max_shots: int = 10**4,
         max_errors: int = 1000,
         decoder_params: dict[str, any] | None = None,
+        logic_check: str = "Z",
     ) -> None:
         r"""
         Collect sampling statistics over ranges of distance and errors.
@@ -180,17 +178,16 @@ class ThresholdLAB:
                 num_workers=num_workers,
                 max_shots=max_shots,
                 max_errors=max_errors,
-                tasks=self.generate_sinter_tasks(),
+                tasks=self.generate_sinter_tasks(logic_check=logic_check),
                 decoders=[self.decoder],
                 custom_decoders=custom_decoder,
-                # custom_decoders= { "mwpf": SinterMWPFDecoder(cluster_node_limit=50) }
             )
         else:
             self._samples = sinter.collect(
                 num_workers=num_workers,
                 max_shots=max_shots,
                 max_errors=max_errors,
-                tasks=self.generate_sinter_tasks(),
+                tasks=self.generate_sinter_tasks(logic_check=logic_check),
                 decoders=[self.decoder],
             )
 
