@@ -14,10 +14,10 @@ from __future__ import annotations
 
 __all__ = [
     "commutation_test",
-    "row_sort_no_dupes",
+    "compare_rows",
+    "row_sort",
     "row_reduced_echelon_form",
     "dependency_check",
-    "row_order",
 ]
 
 
@@ -53,71 +53,58 @@ def row_reduced_echelon_form(check_matrix: list[list[int]]) -> list[list[int]]:
     pass
 
 
-#     proto_ref_matrix = row_sort_no_dupes(check_matrix)
-#     rindex = 0
-#     startRow = proto_ref_matrix[rindex]
-#     col_marker = startRow.index(1)
-
-#     ref_matrix = [startRow]
-
-#     while rindex < len(check_matrix):
-
-#         while proto_ref_matrix[rindex][col_marker]:
-#             row = [(a + b) % 2 for (a, b) in zip(proto_ref_matrix[rindex], startRow)]
-
-#             if sum(row):
-#                 ref_matrix.append(row)
-
-#             rindex += 1
-
-#         proto_ref_matrix_update = row_sort_no_dupes(check_matrix[rindex:])
-#         startRow_update = proto_ref_matrix_update[0]
-#         col_marker_update = startRow_update.index(1)
-
-
-def row_sort_no_dupes(check_matrix: list[list[int]]) -> list[list[int]]:
+def compare_rows(row1: list[int], row2: list[int]) -> int:
     r"""
-    Function to sort and remove duplicate rows (but does not remove redundancies)
+    A function that compares two rows based on the lowest unique non-zero element
+    index.
+
+    :param row1: binary list
+    :param row2: binary list
+    """
+
+    assert len(row1) == len(row2)
+
+    row1p2 = [(a + b) % 2 for (a, b) in zip(row1, row2)]
+
+    if row1.index(1) == row1p2.index(1):
+        return 0
+    else:
+        return 1
+
+    # # row1t2 = [a*b for (a,b) in zip(row1,row2)]
+
+    # if row1t2.count(1) == row1.count(1) and row1t2.count(1) == row2.count(1):
+    #     return (0,0)
+    # else:
+    #     if row1.index(1) == row1p2.index(1):
+    #         return (0,1)
+    #     else:
+    #         return (1,0)
+
+
+def row_sort(check_matrix: list[list[int]]) -> list[list[int]]:
+    r"""
+    Function taking in a check matrix as a list of binary lists and outputs
+    a sorted list of binary lists with the ordering determined by the
+    compare_rows function.
     """
 
     num = len(check_matrix)
     if num < 2:
         return check_matrix
     else:
+        first_half = row_sort(check_matrix[: int(num / 2)])
+        second_half = row_sort(check_matrix[int(num / 2) :])
         sorted_full = []
 
-        halfs = [
-            row_sort_no_dupes(check_matrix[: int(num / 2)]),
-            row_sort_no_dupes(check_matrix[int(num / 2) :]),
-        ]
-
-        while min(len(halfs[0]), len(halfs[1])) > 0:
-            if not sum([(a + b) % 2 for (a, b) in zip(halfs[0][0], halfs[1][0])]):
-                sorted_full.append(halfs[0][0].pop(0))
-                del halfs[1][0]
+        while len(first_half) > 0 and len(second_half) > 0:
+            comp = compare_rows(first_half[0], second_half[0])
+            # if comp == (0,0):
+            #     sorted_full.append(first_half.pop(0))
+            #     del second_half[0]
+            if comp:
+                sorted_full.append(second_half.pop(0))
             else:
-                firstRow = row_order(halfs[0][0], halfs[1][0])
-                sorted_full.append(halfs[firstRow][0].pop(0))
+                sorted_full.append(first_half.pop(0))
 
-        return sorted_full + halfs[0] + halfs[1]
-
-
-def row_order(row1: list[int], row2: list[int]) -> int:
-    r"""
-    An ordering of two binary vectors based on the minimum unique instance of a 1 value.
-
-    :input row1: list of 0's and 1's
-    :input row2: list of 0's and 1's
-
-    :output: binary value indicating whether row1 (0) or row2 (1) comes first
-        in the ordering
-    """
-
-    assert len(row1) == len(row2)
-
-    row1p2 = [(a + b) % 2 for (a, b) in zip(row1, row2)]
-    assert sum(row1p2)
-
-    firstOne = row1p2.index(1)
-
-    return int(not row1[firstOne])
+        return sorted_full + first_half + second_half
