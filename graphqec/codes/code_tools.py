@@ -19,6 +19,7 @@ __all__ = [
     "compute_kernel",
     "prep_matrix",
     "row_extended_check",
+    "row_reduced_binary_matrix",
     "transpose_check",
 ]
 
@@ -71,6 +72,24 @@ def compute_kernel(check_matrix: list[list[int]]) -> list[list[int]]:
             kern.append([row[ii] for ii in range(nrows, len(row))])
 
     return kern
+
+
+def row_reduced_binary_matrix(check_matrix: list[list[int]]) -> list[list[int]]:
+    r"""
+    Function reducing the check_matrix to a minimal number of
+    independent rows
+    """
+
+    rrcheck = [check_matrix[0]]
+    rrank = 1
+
+    for ii in range(1, len(check_matrix)):
+        newrank = binary_rank(rrcheck + [check_matrix[ii]])
+        if newrank > rrank:
+            rrank = newrank
+            rrcheck.append(check_matrix[ii])
+
+    return rrcheck
 
 
 def binary_rank(check_matrix: list[list[int]]) -> int:
