@@ -13,15 +13,15 @@
 from __future__ import annotations
 
 __all__ = [
+    "add_rows",
+    "binary_rank",
     "commutation_test",
     "compare_rows",
-    "row_sort",
-    "leading_ones",
-    "transpose_check",
-    "row_extended_check",
-    "add_rows",
     "compute_kernel",
     "prep_matrix",
+    "row_extended_check",
+    "row_sort",
+    "transpose_check",
 ]
 
 
@@ -47,25 +47,6 @@ def commutation_test(Hx: list[list[int]], Hz: list[list[int]]) -> bool:
     )
 
 
-def compare_rows(row1: list[int], row2: list[int]) -> int:
-    r"""
-    A function that compares two rows based on the lowest unique non-zero element
-    index.
-
-    :param row1: binary list
-    :param row2: binary list
-    """
-
-    assert len(row1) == len(row2)
-
-    row1p2 = [(a + b) % 2 for (a, b) in zip(row1, row2)]
-
-    if row1.index(1) == row1p2.index(1):
-        return 0
-    else:
-        return 1
-
-
 def compute_kernel(check_matrix: list[list[int]]) -> list[list[int]]:
     r"""
     Function that takes in a check matrix as a list of binary lists
@@ -79,18 +60,43 @@ def compute_kernel(check_matrix: list[list[int]]) -> list[list[int]]:
     pmatrix = prep_matrix(check_matrix)
 
     for col1 in range(ncols):
-        mark = pmatrix[col1].index(1)
-        for col2 in range(ncols):
-            if col2 != col1 and pmatrix[col2][mark]:
-                pmatrix[col2] = add_rows(pmatrix[col1], pmatrix[col2])
+        if 1 in pmatrix[col1]:
+            mark = pmatrix[col1].index(1)
+            for col2 in range(ncols):
+                if col2 != col1 and pmatrix[col2][mark]:
+                    pmatrix[col2] = add_rows(pmatrix[col1], pmatrix[col2])
 
     kern = []
 
     for row in pmatrix:
         if not sum(row[:nrows]):
-            kern.append([ii - nrows for ii in range(nrows, len(row)) if row[ii]])
+            kern.append([row[ii] for ii in range(nrows, len(row))])
 
     return kern
+
+
+def binary_rank(check_matrix: list[list[int]]) -> int:
+    r"""
+    Function that computes the rank of a binary matrix given as a
+    list of binary lists.
+
+    :param check_matrix: List of binary lists
+    :return: Binary rank of check_matrix given as an integer
+    """
+    ncols = len(check_matrix[0])
+    mtrans = transpose_check(check_matrix)
+
+    marks = []
+
+    for col1 in range(ncols):
+        if 1 in mtrans[col1]:
+            mark = mtrans[col1].index(1)
+            marks.append(mark)
+            for col2 in range(ncols):
+                if col2 != col1 and mtrans[col2][mark]:
+                    mtrans[col2] = add_rows(mtrans[col1], mtrans[col2])
+
+    return len(marks)
 
 
 def prep_matrix(check_matrix: list[list[int]]) -> list[list[int]]:
@@ -99,56 +105,11 @@ def prep_matrix(check_matrix: list[list[int]]) -> list[list[int]]:
     binary lists and outputs an extended matrix intended
     for use when computing the kernel.
     """
-    cmsort = row_sort(check_matrix)
-    cmsextend = row_extended_check(cmsort)
+
+    cmsextend = row_extended_check(check_matrix)
     hf = transpose_check(cmsextend)
+
     return hf
-
-
-def row_sort(check_matrix: list[list[int]]) -> list[list[int]]:
-    r"""
-    Function taking in a check matrix as a list of binary lists and outputs
-    a sorted list of binary lists with the ordering determined by the
-    compare_rows function.
-    """
-
-    num = len(check_matrix)
-    if num < 2:
-        return check_matrix
-    else:
-        first_half = row_sort(check_matrix[: int(num / 2)])
-        second_half = row_sort(check_matrix[int(num / 2) :])
-        sorted_full = []
-
-        while len(first_half) > 0 and len(second_half) > 0:
-            comp = compare_rows(first_half[0], second_half[0])
-            if comp:
-                sorted_full.append(second_half.pop(0))
-            else:
-                sorted_full.append(first_half.pop(0))
-
-        return sorted_full + first_half + second_half
-
-
-def leading_ones(check_matrix: list[list[int]]) -> dict[int, list[int]]:
-    r"""
-    Function taking in a check matrix as a list of binary lists and
-    outputs a dictionary mapping each index to the list of rows for
-    which that index is the leading one in the list.
-
-    :param check_matrix: list of binary lists
-
-    """
-
-    leaders = {}
-
-    for row_index in range(len(check_matrix)):
-        if check_matrix[row_index].index(1) in leaders:
-            leaders[check_matrix[row_index].index(1)].append(row_index)
-        else:
-            leaders[check_matrix[row_index].index(1)] = [row_index]
-
-    return leaders
 
 
 def transpose_check(check_matrix: list[list[int]]) -> list[list[int]]:
@@ -186,3 +147,68 @@ def row_extended_check(check_matrix: list[list[int]]) -> list[list[int]]:
         ch_ext.append([0] * ii + [1] + [0] * (ncols - ii - 1))
 
     return check_matrix + ch_ext
+
+
+def row_sort(check_matrix: list[list[int]]) -> list[list[int]]:
+    r"""
+    Function taking in a check matrix as a list of binary lists and outputs
+    a sorted list of binary lists with the ordering determined by the
+    compare_rows function.
+    """
+
+    num = len(check_matrix)
+    if num < 2:
+        return check_matrix
+    else:
+        first_half = row_sort(check_matrix[: int(num / 2)])
+        second_half = row_sort(check_matrix[int(num / 2) :])
+        sorted_full = []
+
+        while len(first_half) > 0 and len(second_half) > 0:
+            comp = compare_rows(first_half[0], second_half[0])
+            if comp:
+                sorted_full.append(second_half.pop(0))
+            else:
+                sorted_full.append(first_half.pop(0))
+
+        return sorted_full + first_half + second_half
+
+
+def compare_rows(row1: list[int], row2: list[int]) -> int:
+    r"""
+    A function that compares two rows based on the lowest unique non-zero element
+    index.
+
+    :param row1: binary list
+    :param row2: binary list
+    """
+
+    assert len(row1) == len(row2)
+
+    row1p2 = [(a + b) % 2 for (a, b) in zip(row1, row2)]
+
+    if row1.index(1) == row1p2.index(1):
+        return 0
+    else:
+        return 1
+
+
+# def leading_ones(check_matrix: list[list[int]]) -> dict[int, list[int]]:
+#     r"""
+#     Function taking in a check matrix as a list of binary lists and
+#     outputs a dictionary mapping each index to the list of rows for
+#     which that index is the leading one in the list.
+
+#     :param check_matrix: list of binary lists
+
+#     """
+
+#     leaders = {}
+
+#     for row_index in range(len(check_matrix)):
+#         if check_matrix[row_index].index(1) in leaders:
+#             leaders[check_matrix[row_index].index(1)].append(row_index)
+#         else:
+#             leaders[check_matrix[row_index].index(1)] = [row_index]
+
+#     return leaders

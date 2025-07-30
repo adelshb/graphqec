@@ -13,7 +13,7 @@
 from __future__ import annotations
 
 from graphqec.codes.base_code import BaseCode
-from graphqec.codes.code_tools import commutation_test
+from graphqec.codes.code_tools import binary_rank, commutation_test, compute_kernel
 
 __all__ = ["CssCode"]
 
@@ -43,7 +43,7 @@ class CssCode(BaseCode):
 
         self.nqubits = len(Hz[0])
 
-        self._logic_check = self.compute_x_logicals()
+        self._logic_check = [self.compute_x_logicals(), self.compute_z_logicals()]
 
         super().__init__(*args, **kwargs)
 
@@ -126,12 +126,49 @@ class CssCode(BaseCode):
         Find the image and kernel for each linear code.
         """
 
-        rrHx = []
+        # First find the kernel of Hz
 
-        for qub_col in range(self.nqubits):
+        zkern = compute_kernel(self.Hz)
 
-            for H in [self.Hx, self.Hz]:
+        # now find elements of ker Hz that are independent of im Hx
 
-                pass
+        Hxw = [row for row in self.Hx]
+        starting_rank = binary_rank(self.Hx)
+        ranking_rank = starting_rank
 
-        return rrHx
+        for row in zkern:
+            new_rank = binary_rank(Hxw + [row])
+            if new_rank > ranking_rank:  # If rank increases, new row is indept
+                Hxw.append(row)  # Add new row
+                ranking_rank = new_rank
+
+        xlogs = Hxw[-(ranking_rank - starting_rank) :]
+
+        return xlogs
+
+    def compute_z_logicals(self) -> list[list[int]]:
+        r"""
+        Function for computing a set of logical operators for the input
+        parity check operators.
+        Find the image and kernel for each linear code.
+        """
+
+        # First find the kernel of Hz
+
+        xkern = compute_kernel(self.Hx)
+
+        # now find elements of ker Hz that are independent of im Hx
+
+        Hzw = [row for row in self.Hz]
+        starting_rank = binary_rank(self.Hz)
+        ranking_rank = starting_rank
+
+        for row in xkern:
+            new_rank = binary_rank(Hzw + [row])
+            if new_rank > ranking_rank:  # If rank increases, new row is indept
+                Hzw.append(row)  # Add new row
+                ranking_rank = new_rank
+
+        zlogs = Hzw[-(ranking_rank - starting_rank) :]
+
+        return zlogs
