@@ -16,9 +16,9 @@ __all__ = [
     "commutation_test",
     "compare_rows",
     "row_sort",
-    "row_reduced_echelon_form",
-    "dependency_check",
     "leading_ones",
+    "transpose_check",
+    "row_extended_check",
 ]
 
 
@@ -33,25 +33,6 @@ def commutation_test(Hx: list[list[int]], Hz: list[list[int]]) -> bool:
     return all(
         [(not sum([a * b for (a, b) in zip(hx, hz)]) % 2) for hx in Hx for hz in Hz]
     )
-
-
-def dependency_check(ref_matrix: list[list[int]], check_row: list[int]) -> bool:
-    r"""
-    function taking in a rref matrix and a vector and tests if the vector can
-    be written as a linear combination of the rows of the matrix.
-    """
-
-    pass
-
-
-def row_reduced_echelon_form(check_matrix: list[list[int]]) -> list[list[int]]:
-    r"""
-    function taking in a binary check matrix and returns an
-    equivalent check matrix in row reduced echelon form, that is, with all
-    redundancies eliminated.
-    """
-
-    pass
 
 
 def compare_rows(row1: list[int], row2: list[int]) -> int:
@@ -108,14 +89,13 @@ def leading_ones(check_matrix: list[list[int]]) -> dict[int, list[int]]:
 
     """
 
-    sorted_rows = row_sort(check_matrix)
     leaders = {}
 
-    for row_index in range(len(sorted_rows)):
-        if sorted_rows[row_index].index(1) in leaders:
-            leaders[sorted_rows[row_index].index(1)].append(row_index)
+    for row_index in range(len(check_matrix)):
+        if check_matrix[row_index].index(1) in leaders:
+            leaders[check_matrix[row_index].index(1)].append(row_index)
         else:
-            leaders[sorted_rows[row_index].index(1)] = [row_index]
+            leaders[check_matrix[row_index].index(1)] = [row_index]
 
     return leaders
 
@@ -136,3 +116,22 @@ def transpose_check(check_matrix: list[list[int]]) -> list[list[int]]:
     ]
 
     return check_trans
+
+
+def row_extended_check(check_matrix: list[list[int]]) -> list[list[int]]:
+    r"""
+    Function taking in a check matrix as a list of binary lists and
+    outputs the matrix extended by the identity matrix with the same
+    number of columns.
+
+    :param check_matrix: list of binary lists
+    """
+
+    ncols = len(check_matrix[0])
+
+    ch_ext = []
+
+    for ii in range(ncols):
+        ch_ext.append([0] * ii + [1] + [0] * (ncols - ii - 1))
+
+    return check_matrix + ch_ext
