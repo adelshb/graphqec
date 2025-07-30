@@ -19,7 +19,19 @@ __all__ = [
     "leading_ones",
     "transpose_check",
     "row_extended_check",
+    "add_rows",
+    "compute_kernel",
+    "prep_matrix",
 ]
+
+
+def add_rows(row1: list[int], row2: list[int]) -> list[int]:
+
+    assert len(row1) == len(row2)
+
+    row1p2 = [(a + b) % 2 for (a, b) in zip(row1, row2)]
+
+    return row1p2
 
 
 def commutation_test(Hx: list[list[int]], Hz: list[list[int]]) -> bool:
@@ -52,6 +64,45 @@ def compare_rows(row1: list[int], row2: list[int]) -> int:
         return 0
     else:
         return 1
+
+
+def compute_kernel(check_matrix: list[list[int]]) -> list[list[int]]:
+    r"""
+    Function that takes in a check matrix as a list of binary lists
+    and outputs an (overcomplete) list of operators in the kernel
+    given by their supports on qubits.
+
+    :param check_matrix: list of binary lists
+    """
+    nrows = len(check_matrix)
+    ncols = len(check_matrix[0])
+    pmatrix = prep_matrix(check_matrix)
+
+    for col1 in range(ncols):
+        mark = pmatrix[col1].index(1)
+        for col2 in range(ncols):
+            if col2 != col1 and pmatrix[col2][mark]:
+                pmatrix[col2] = add_rows(pmatrix[col1], pmatrix[col2])
+
+    kern = []
+
+    for row in pmatrix:
+        if not sum(row[:nrows]):
+            kern.append([ii - nrows for ii in range(nrows, len(row)) if row[ii]])
+
+    return kern
+
+
+def prep_matrix(check_matrix: list[list[int]]) -> list[list[int]]:
+    r"""
+    Function that takes in a check matrix given as a list of
+    binary lists and outputs an extended matrix intended
+    for use when computing the kernel.
+    """
+    cmsort = row_sort(check_matrix)
+    cmsextend = row_extended_check(cmsort)
+    hf = transpose_check(cmsextend)
+    return hf
 
 
 def row_sort(check_matrix: list[list[int]]) -> list[list[int]]:
