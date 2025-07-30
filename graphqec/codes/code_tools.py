@@ -18,6 +18,7 @@ __all__ = [
     "row_sort",
     "row_reduced_echelon_form",
     "dependency_check",
+    "leading_ones",
 ]
 
 
@@ -71,16 +72,6 @@ def compare_rows(row1: list[int], row2: list[int]) -> int:
     else:
         return 1
 
-    # # row1t2 = [a*b for (a,b) in zip(row1,row2)]
-
-    # if row1t2.count(1) == row1.count(1) and row1t2.count(1) == row2.count(1):
-    #     return (0,0)
-    # else:
-    #     if row1.index(1) == row1p2.index(1):
-    #         return (0,1)
-    #     else:
-    #         return (1,0)
-
 
 def row_sort(check_matrix: list[list[int]]) -> list[list[int]]:
     r"""
@@ -99,12 +90,31 @@ def row_sort(check_matrix: list[list[int]]) -> list[list[int]]:
 
         while len(first_half) > 0 and len(second_half) > 0:
             comp = compare_rows(first_half[0], second_half[0])
-            # if comp == (0,0):
-            #     sorted_full.append(first_half.pop(0))
-            #     del second_half[0]
             if comp:
                 sorted_full.append(second_half.pop(0))
             else:
                 sorted_full.append(first_half.pop(0))
 
         return sorted_full + first_half + second_half
+
+
+def leading_ones(check_matrix: list[list[int]]) -> dict[int, list[int]]:
+    r"""
+    Function taking in a check matrix as a list of binary lists and
+    outputs a dictionary mapping each index to the list of rows for
+    which that index is the leading one in the list.
+
+    :param check_matrix: list of binary lists
+
+    """
+
+    sorted_rows = row_sort(check_matrix)
+    leaders = {}
+
+    for row_index in range(len(sorted_rows)):
+        if sorted_rows[row_index].index(1) in leaders:
+            leaders[sorted_rows[row_index].index(1)].append(row_index)
+        else:
+            leaders[sorted_rows[row_index].index(1)] = [row_index]
+
+    return leaders
