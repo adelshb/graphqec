@@ -118,3 +118,21 @@ def leading_ones(check_matrix: list[list[int]]) -> dict[int, list[int]]:
             leaders[sorted_rows[row_index].index(1)] = [row_index]
 
     return leaders
+
+
+def transpose_check(check_matrix: list[list[int]]) -> list[list[int]]:
+    r"""
+    Function taking in a check matrix as a list of binary lists and
+    outputs the matrix transpose as a list of binary lists
+
+    :param check_matrix: list of binary lists
+    """
+
+    nrows = len(check_matrix)
+    ncols = len(check_matrix[0])
+
+    check_trans = [
+        [check_matrix[row][col] for row in range(nrows)] for col in range(ncols)
+    ]
+
+    return check_trans
