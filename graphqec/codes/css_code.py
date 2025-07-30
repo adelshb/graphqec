@@ -45,11 +45,13 @@ class CssCode(BaseCode):
 
         self._logic_check = [self.compute_x_logicals(), self.compute_z_logicals()]
 
+        assert len(self._logic_check[0]) == len(self._logic_check[1])
+
         super().__init__(*args, **kwargs)
 
         self._name = (
             # f"CSS [[{self.nqubits},{len(self._logic_check)},{self.distance}]]"
-            f"CSS [[{self.nqubits},{len(self._logic_check)}]]"
+            f"CSS [[{self.nqubits},{len(self._logic_check[0])}]]"
         )
 
     def build_graph(self) -> None:
