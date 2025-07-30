@@ -47,12 +47,22 @@ class CssCode(BaseCode):
 
         assert len(self._logic_check[0]) == len(self._logic_check[1])
 
+        self._distance = self.distance_estimate()
+
         super().__init__(*args, **kwargs)
 
         self._name = (
             # f"CSS [[{self.nqubits},{len(self._logic_check)},{self.distance}]]"
-            f"CSS [[{self.nqubits},{len(self._logic_check[0])}]]"
+            f"CSS [[{self.nqubits},{len(self._logic_check[0])},{self.distance}]]"
         )
+
+    def distance_estimate(self) -> int:
+        Lx, Lz = self._logic_check
+
+        xdistance = min([sum(row) for row in Lx])
+        zdistance = min([sum(row) for row in Lz])
+
+        return min([xdistance, zdistance])
 
     def build_graph(self) -> None:
         r"""
@@ -135,13 +145,14 @@ class CssCode(BaseCode):
         # now find elements of ker Hz that are independent of im Hx
 
         Hxw = [row for row in self.Hx]
-        starting_rank = binary_rank(self.Hx)
+
+        starting_rank = binary_rank(Hxw)
         ranking_rank = starting_rank
 
-        for row in zkern:
-            new_rank = binary_rank(Hxw + [row])
+        for zrow in zkern:
+            new_rank = binary_rank(Hxw + [zrow])
             if new_rank > ranking_rank:  # If rank increases, new row is indept
-                Hxw.append(row)  # Add new row
+                Hxw.append(zrow)  # Add new row
                 ranking_rank = new_rank
 
         xlogs = Hxw[-(ranking_rank - starting_rank) :]
@@ -160,15 +171,15 @@ class CssCode(BaseCode):
         xkern = compute_kernel(self.Hx)
 
         # now find elements of ker Hz that are independent of im Hx
-
         Hzw = [row for row in self.Hz]
-        starting_rank = binary_rank(self.Hz)
+
+        starting_rank = binary_rank(Hzw)
         ranking_rank = starting_rank
 
-        for row in xkern:
-            new_rank = binary_rank(Hzw + [row])
+        for xrow in xkern:
+            new_rank = binary_rank(Hzw + [xrow])
             if new_rank > ranking_rank:  # If rank increases, new row is indept
-                Hzw.append(row)  # Add new row
+                Hzw.append(xrow)  # Add new row
                 ranking_rank = new_rank
 
         zlogs = Hzw[-(ranking_rank - starting_rank) :]

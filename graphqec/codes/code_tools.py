@@ -123,8 +123,8 @@ def prep_matrix(check_matrix: list[list[int]]) -> list[list[int]]:
     for use when computing the kernel.
     """
 
-    cmsextend = row_extended_check(check_matrix)
-    hf = transpose_check(cmsextend)
+    cmsextend = row_extended_check(check_matrix)  # extend with the identity
+    hf = transpose_check(cmsextend)  # transpose the list indices
 
     return hf
 
