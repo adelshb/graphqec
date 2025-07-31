@@ -13,7 +13,7 @@
 from __future__ import annotations
 
 from graphqec.codes.base_code import BaseCode
-from graphqec.codes.code_tools import binary_rank, commutation_test, compute_kernel
+from graphqec.codes.code_tools import commutation_test, compute_kernel, find_pivots
 
 __all__ = ["CssCode"]
 
@@ -146,16 +146,11 @@ class CssCode(BaseCode):
 
         Hxw = [row for row in self.Hx]
 
-        starting_rank = binary_rank(Hxw)
-        ranking_rank = starting_rank
+        Hxw += zkern
 
-        for zrow in zkern:
-            new_rank = binary_rank(Hxw + [zrow])
-            if new_rank > ranking_rank:  # If rank increases, new row is indept
-                Hxw.append(zrow)  # Add new row
-                ranking_rank = new_rank
+        xpivots = find_pivots(Hxw)
 
-        xlogs = Hxw[-(ranking_rank - starting_rank) :]
+        xlogs = [Hxw[ii] for ii in xpivots if ii >= len(self.Hx)]
 
         return xlogs
 
@@ -171,17 +166,13 @@ class CssCode(BaseCode):
         xkern = compute_kernel(self.Hx)
 
         # now find elements of ker Hz that are independent of im Hx
+
         Hzw = [row for row in self.Hz]
 
-        starting_rank = binary_rank(Hzw)
-        ranking_rank = starting_rank
+        Hzw += xkern
 
-        for xrow in xkern:
-            new_rank = binary_rank(Hzw + [xrow])
-            if new_rank > ranking_rank:  # If rank increases, new row is indept
-                Hzw.append(xrow)  # Add new row
-                ranking_rank = new_rank
+        zpivots = find_pivots(Hzw)
 
-        zlogs = Hzw[-(ranking_rank - starting_rank) :]
+        zlogs = [Hzw[ii] for ii in zpivots if ii >= len(self.Hz)]
 
         return zlogs

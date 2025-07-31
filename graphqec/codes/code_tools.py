@@ -14,12 +14,11 @@ from __future__ import annotations
 
 __all__ = [
     "add_rows",
-    "binary_rank",
     "commutation_test",
     "compute_kernel",
+    "find_pivots",
     "prep_matrix",
     "row_extended_check",
-    "row_reduced_binary_matrix",
     "transpose_check",
 ]
 
@@ -74,25 +73,7 @@ def compute_kernel(check_matrix: list[list[int]]) -> list[list[int]]:
     return kern
 
 
-def row_reduced_binary_matrix(check_matrix: list[list[int]]) -> list[list[int]]:
-    r"""
-    Function reducing the check_matrix to a minimal number of
-    independent rows
-    """
-
-    rrcheck = [check_matrix[0]]
-    rrank = 1
-
-    for ii in range(1, len(check_matrix)):
-        newrank = binary_rank(rrcheck + [check_matrix[ii]])
-        if newrank > rrank:
-            rrank = newrank
-            rrcheck.append(check_matrix[ii])
-
-    return rrcheck
-
-
-def binary_rank(check_matrix: list[list[int]]) -> int:
+def find_pivots(check_matrix: list[list[int]]) -> int:
     r"""
     Function that computes the rank of a binary matrix given as a
     list of binary lists.
@@ -103,17 +84,17 @@ def binary_rank(check_matrix: list[list[int]]) -> int:
     ncols = len(check_matrix[0])
     mtrans = transpose_check(check_matrix)
 
-    marks = []
+    pivots = []
 
     for col1 in range(ncols):
         if 1 in mtrans[col1]:
             mark = mtrans[col1].index(1)
-            marks.append(mark)
+            pivots.append(mark)
             for col2 in range(ncols):
                 if col2 != col1 and mtrans[col2][mark]:
                     mtrans[col2] = add_rows(mtrans[col1], mtrans[col2])
 
-    return len(marks)
+    return pivots
 
 
 def prep_matrix(check_matrix: list[list[int]]) -> list[list[int]]:
@@ -127,24 +108,6 @@ def prep_matrix(check_matrix: list[list[int]]) -> list[list[int]]:
     hf = transpose_check(cmsextend)  # transpose the list indices
 
     return hf
-
-
-def transpose_check(check_matrix: list[list[int]]) -> list[list[int]]:
-    r"""
-    Function taking in a check matrix as a list of binary lists and
-    outputs the matrix transpose as a list of binary lists
-
-    :param check_matrix: list of binary lists
-    """
-
-    nrows = len(check_matrix)
-    ncols = len(check_matrix[0])
-
-    check_trans = [
-        [check_matrix[row][col] for row in range(nrows)] for col in range(ncols)
-    ]
-
-    return check_trans
 
 
 def row_extended_check(check_matrix: list[list[int]]) -> list[list[int]]:
@@ -164,3 +127,21 @@ def row_extended_check(check_matrix: list[list[int]]) -> list[list[int]]:
         ch_ext.append([0] * ii + [1] + [0] * (ncols - ii - 1))
 
     return check_matrix + ch_ext
+
+
+def transpose_check(check_matrix: list[list[int]]) -> list[list[int]]:
+    r"""
+    Function taking in a check matrix as a list of binary lists and
+    outputs the matrix transpose as a list of binary lists
+
+    :param check_matrix: list of binary lists
+    """
+
+    nrows = len(check_matrix)
+    ncols = len(check_matrix[0])
+
+    check_trans = [
+        [check_matrix[row][col] for row in range(nrows)] for col in range(ncols)
+    ]
+
+    return check_trans
