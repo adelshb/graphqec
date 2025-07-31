@@ -47,16 +47,16 @@ class CssCode(BaseCode):
 
         assert len(self._logic_check[0]) == len(self._logic_check[1])
 
-        self._distance = self.distance_estimate()
+        self._distance = self.distance_upper_bound()
 
         super().__init__(*args, **kwargs)
 
         self._name = (
             # f"CSS [[{self.nqubits},{len(self._logic_check)},{self.distance}]]"
-            f"CSS [[{self.nqubits},{len(self._logic_check[0])},{self.distance}]]"
+            f"CSS [[{self.nqubits},{len(self._logic_check[0])}]]"
         )
 
-    def distance_estimate(self) -> int:
+    def distance_upper_bound(self) -> int:
         Lx, Lz = self._logic_check
 
         xdistance = min([sum(row) for row in Lx])
