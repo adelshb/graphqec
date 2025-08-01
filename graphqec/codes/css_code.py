@@ -150,7 +150,9 @@ class CssCode(BaseCode):
 
         xpivots = find_pivots(Hxw)
 
-        xlogs = [Hxw[ii] for ii in xpivots if ii >= len(self.Hx)]
+        xlogs = [
+            Hxw[ii] for ii in xpivots if ii >= len(self.Hx)
+        ]  # only choose rows introduced by zkern
 
         return xlogs
 

@@ -24,6 +24,16 @@ __all__ = [
 
 
 def add_rows(row1: list[int], row2: list[int]) -> list[int]:
+    r"""
+    A function that takes two binary lists of equal length and
+    returns a binary list made up of the component-wise
+    mod 2 sum of the input lists.
+
+    :param row1: A binary list
+    :param row2: A binary list
+    :return: A binary list
+
+    """
 
     assert len(row1) == len(row2)
 
@@ -35,7 +45,11 @@ def add_rows(row1: list[int], row2: list[int]) -> list[int]:
 def commutation_test(Hx: list[list[int]], Hz: list[list[int]]) -> bool:
     r"""
     function for taking two linear codes and determining if they satisfy
-    the necessary constraints for defining a CSS code
+    the necessary constraints for defining a CSS code.
+
+    :param Hx: A list of binary lists
+    :param Hz: A list of binary lists
+    :return: Boolean
     """
 
     assert len(Hx[0]) == len(Hz[0])
@@ -52,10 +66,21 @@ def compute_kernel(check_matrix: list[list[int]]) -> list[list[int]]:
     given by their supports on qubits.
 
     :param check_matrix: list of binary lists
+    :return: list of binary lists.
     """
     nrows = len(check_matrix)
     ncols = len(check_matrix[0])
+
+    # Prepare the matrix:
+    # [    check_matrix   ] ^ T
+    # [-------------------]
+    # [Ident ncols x ncols]
+
     pmatrix = prep_matrix(check_matrix)
+
+    # Row-by-row elimination on the prepared
+    # matrix with row labels corresponding
+    # to the col labels of check_matrix
 
     for col1 in range(ncols):
         if 1 in pmatrix[col1]:
@@ -65,6 +90,11 @@ def compute_kernel(check_matrix: list[list[int]]) -> list[list[int]]:
                     pmatrix[col2] = add_rows(pmatrix[col1], pmatrix[col2])
 
     kern = []
+
+    # Kernel will be given by the second part
+    # of rows in the augmented matrix
+    # in which the first part of the row
+    # is all zeros.
 
     for row in pmatrix:
         if not sum(row[:nrows]):
@@ -79,8 +109,11 @@ def find_pivots(check_matrix: list[list[int]]) -> int:
     list of binary lists.
 
     :param check_matrix: List of binary lists
-    :return: Binary rank of check_matrix given as an integer
+    :return: List of the elements of check_matrix that comprise
+            a maximal set of independent binary vectors in
+            check_matrix.
     """
+
     ncols = len(check_matrix[0])
     mtrans = transpose_check(check_matrix)
 
@@ -102,6 +135,9 @@ def prep_matrix(check_matrix: list[list[int]]) -> list[list[int]]:
     Function that takes in a check matrix given as a list of
     binary lists and outputs an extended matrix intended
     for use when computing the kernel.
+
+    :param check_matrix: A list of N binary lists of length M
+    :return: A list of M binary lists of length N
     """
 
     cmsextend = row_extended_check(check_matrix)  # extend with the identity
@@ -116,7 +152,8 @@ def row_extended_check(check_matrix: list[list[int]]) -> list[list[int]]:
     outputs the matrix extended by the identity matrix with the same
     number of columns.
 
-    :param check_matrix: list of binary lists
+    :param check_matrix: list of N binary lists of length M
+    :return: A list of (N+M) binary lists of length M
     """
 
     ncols = len(check_matrix[0])
@@ -134,7 +171,8 @@ def transpose_check(check_matrix: list[list[int]]) -> list[list[int]]:
     Function taking in a check matrix as a list of binary lists and
     outputs the matrix transpose as a list of binary lists
 
-    :param check_matrix: list of binary lists
+    :param check_matrix: list of N binary lists of length M
+    :return: list of M binary lists of length N.
     """
 
     nrows = len(check_matrix)
