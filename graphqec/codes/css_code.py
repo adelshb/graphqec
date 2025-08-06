@@ -43,17 +43,23 @@ class CssCode(BaseCode):
 
         self.nqubits = len(Hz[0])
 
-        self._logic_check = [self.compute_x_logicals(), self.compute_z_logicals()]
+        # self._logic_check = [self.compute_x_logicals(), self.compute_z_logicals()]
+        # assert len(self._logic_check[0]) == len(self._logic_check[1])
 
-        assert len(self._logic_check[0]) == len(self._logic_check[1])
-
-        self._distance = self.distance_upper_bound()
+        self._logic_check = [
+            ii
+            for ii in range(len(self.compute_z_logicals()[0]))
+            if self.compute_z_logicals()[0][ii]
+        ]
 
         super().__init__(*args, **kwargs)
 
+        # self._distance = self.distance_upper_bound()
+        self._distance = len(self._logic_check)
+
         self._name = (
             # f"CSS [[{self.nqubits},{len(self._logic_check)},{self.distance}]]"
-            f"CSS [[{self.nqubits},{len(self._logic_check[0])}]]"
+            # f"CSS [[{self.nqubits},{len(self._logic_check[0])},{self.distance}]]"
         )
 
     def distance_upper_bound(self) -> int:
@@ -102,6 +108,8 @@ class CssCode(BaseCode):
             ]
         )
 
+        schedule = {q: 1 for q in range(self.nqubits + len(self.Hz) + len(self.Hx))}
+
         for row_index in range(len(self.Hx)):
 
             xrow = self.Hx[row_index]
@@ -111,9 +119,24 @@ class CssCode(BaseCode):
                 if xrow[qcol]:
                     suppx.append(qcol)
 
-            self._graph.add_weighted_edges_from(
-                [(suppx[i], self.nqubits + row_index, i) for i in range(len(suppx))]
-            )
+            for i in range(len(suppx)):
+
+                self._graph.add_weighted_edges_from(
+                    [
+                        (
+                            suppx[i],
+                            self.nqubits + row_index,
+                            max(schedule[suppx[i]], schedule[self.nqubits + row_index]),
+                        )
+                    ]
+                )
+
+                schedule[suppx[i]] = (
+                    max(schedule[suppx[i]], schedule[self.nqubits + row_index]) + 1
+                )
+                schedule[self.nqubits + row_index] = (
+                    max(schedule[suppx[i]], schedule[self.nqubits + row_index]) + 1
+                )
 
         for row_index in range(len(self.Hz)):
 
@@ -124,12 +147,35 @@ class CssCode(BaseCode):
                 if zrow[qcol]:
                     suppz.append(qcol)
 
-            self._graph.add_weighted_edges_from(
-                [
-                    (qcol, self.nqubits + len(self.Hx) + row_index, i)
-                    for i in range(len(suppz))
-                ]
-            )
+            for i in range(len(suppz)):
+
+                self._graph.add_weighted_edges_from(
+                    [
+                        (
+                            suppz[i],
+                            self.nqubits + len(self.Hx) + row_index,
+                            max(
+                                schedule[suppz[i]],
+                                schedule[self.nqubits + len(self.Hx) + row_index],
+                            ),
+                        )
+                    ]
+                )
+
+                schedule[suppz[i]] = (
+                    max(
+                        schedule[suppz[i]],
+                        schedule[self.nqubits + len(self.Hx) + row_index],
+                    )
+                    + 1
+                )
+                schedule[self.nqubits + len(self.Hx) + row_index] = (
+                    max(
+                        schedule[suppz[i]],
+                        schedule[self.nqubits + len(self.Hx) + row_index],
+                    )
+                    + 1
+                )
 
     def compute_x_logicals(self) -> list[list[int]]:
         r"""
@@ -175,6 +221,8 @@ class CssCode(BaseCode):
 
         zpivots = find_pivots(Hzw)
 
-        zlogs = [Hzw[ii] for ii in zpivots if ii >= len(self.Hz)]
+        zlogs = [
+            Hzw[ii] for ii in zpivots if ii >= len(self.Hz)
+        ]  # only choose rows introduced by xkern
 
         return zlogs
