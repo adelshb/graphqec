@@ -12,8 +12,10 @@
 
 from __future__ import annotations
 
+import numpy as np
+
 from graphqec.codes.base_code import BaseCode
-from graphqec.codes.code_tools import commutation_test, compute_kernel, find_pivots
+from graphqec.math import commutation_test, compute_kernel, find_pivots
 
 __all__ = ["CssCode"]
 
@@ -25,10 +27,17 @@ class CssCode(BaseCode):
     associated quantum code.
     """
 
+    __slots__ = (
+        "_Hx",
+        "_Hz",
+        "_num_data_qubits",
+    )
+
     def __init__(
         self,
         Hx: list[list[int]],
         Hz: list[list[int]],
+        name: str | None = None,
         *args,
         **kwargs,
     ) -> None:
@@ -36,61 +45,77 @@ class CssCode(BaseCode):
         Initialize the CSS code instance.
         """
 
-        assert commutation_test(Hx, Hz)
+        if not commutation_test(Hz, Hx):
+            raise ValueError(
+                "The input parity check operators do not commute with each other."
+            )
 
-        self.Hx = Hx
-        self.Hz = Hz
+        self._Hx = Hx
+        self._Hz = Hz
+        self._num_data_qubits = len(Hz[0])
 
-        self.nqubits = len(Hz[0])
-
-        # self._logic_check = [self.compute_x_logicals(), self.compute_z_logicals()]
-        # assert len(self._logic_check[0]) == len(self._logic_check[1])
+        L_z = self.compute_logicals(logical="Z")
+        L_x = self.compute_logicals(logical="X")
 
         self._logic_check = {
-            "Z": [
-                ii
-                for ii in range(len(self.compute_z_logicals()[0]))
-                if self.compute_z_logicals()[0][ii]
-            ],
-            "X": [
-                ii
-                for ii in range(len(self.compute_x_logicals()[0]))
-                if self.compute_x_logicals()[0][ii]
-            ],
+            "Z": [ii for ii in range(len(L_z[0])) if L_z[0][ii]],
+            "X": [ii for ii in range(len(L_x[0])) if L_x[0][ii]],
         }
 
         super().__init__(*args, **kwargs)
 
-        # self._distance = self.distance_upper_bound()
-        self._distance = len(self._logic_check)
+        self._distance = self.distance_upper_bound()
+        if name is not None:
+            self._name = f"{name} [[{self.num_data_qubits},{len(self._logic_check['Z'])},{self.distance}]]"
+        else:
+            self._name = f"CSS [[{self.num_data_qubits},{len(self._logic_check['Z'])},{self.distance}]]"
 
-        self._name = (
-            # f"CSS [[{self.nqubits},{len(self._logic_check)},{self.distance}]]"
-            # f"CSS [[{self.nqubits},{len(self._logic_check[0])},{self.distance}]]"
-        )
+    @property
+    def Hx(self) -> list[list[int]]:
+        r"""
+        The X check matrix of the CSS code.
+        """
+        return self._Hx
+
+    @property
+    def Hz(self) -> list[list[int]]:
+        r"""
+        The Z check matrix of the CSS code.
+        """
+        return self._Hz
+
+    @property
+    def num_data_qubits(self) -> int:
+        r"""
+        The number of data qubits in the CSS code.
+        """
+        return self._num_data_qubits
 
     def distance_upper_bound(self) -> int:
+        r"""
+        Compute the distance upper bound of the CSS code.
+        The distance is defined as the minimum of the distances of the X and Z.
+        """
         Lx, Lz = self._logic_check
-
-        xdistance = min([sum(row) for row in Lx])
-        zdistance = min([sum(row) for row in Lz])
+        xdistance = min([len(row) for row in Lx])
+        zdistance = min([len(row) for row in Lz])
 
         return min([xdistance, zdistance])
 
     def build_graph(self) -> None:
         r"""
         Build the Tanner graph for the CSS code.
-        Qubit nodes labels: 0, 1,..., nqubits-1
-        Xcheck nodes labels: nqubits, nqubits+1,...,nqubits+nxchecks-1
-        Zcheck nodes labels: nqubits+nxchecks,...,nqubits+nxchecks+nzchecks-1
+        Qubit nodes labels: 0, 1,..., num_data_qubits-1
+        Xcheck nodes labels: num_data_qubits, num_data_qubits+1,...,num_data_qubits+nxchecks-1
+        Zcheck nodes labels: num_data_qubits+nxchecks,...,num_data_qubits+nxchecks+nzchecks-1
 
-        Edges are added based on the X and Z check matrices
+        Edges are added based on the X and Z check matrices.
         """
 
         self._graph.add_nodes_from(
             [
                 (i, {"type": "data", "label": None, "label_id": i})
-                for i in range(self.nqubits)
+                for i in range(self.num_data_qubits)
             ]
         )
         self._graph.add_nodes_from(
@@ -99,7 +124,9 @@ class CssCode(BaseCode):
                     i,
                     {"type": "check", "label": "X", "label_id": i},
                 )
-                for i in range(self.nqubits, self.nqubits + len(self.Hx))
+                for i in range(
+                    self.num_data_qubits, self.num_data_qubits + len(self.Hx)
+                )
             ]
         )
         self._graph.add_nodes_from(
@@ -109,20 +136,22 @@ class CssCode(BaseCode):
                     {"type": "check", "label": "Z", "label_id": i},
                 )
                 for i in range(
-                    self.nqubits + len(self.Hx),
-                    self.nqubits + len(self.Hx) + len(self.Hz),
+                    self.num_data_qubits + len(self.Hx),
+                    self.num_data_qubits + len(self.Hx) + len(self.Hz),
                 )
             ]
         )
 
-        schedule = {q: 1 for q in range(self.nqubits + len(self.Hz) + len(self.Hx))}
+        schedule = {
+            q: 1 for q in range(self.num_data_qubits + len(self.Hz) + len(self.Hx))
+        }
 
         for row_index in range(len(self.Hx)):
 
             xrow = self.Hx[row_index]
             suppx = []
 
-            for qcol in range(self.nqubits):
+            for qcol in range(self.num_data_qubits):
                 if xrow[qcol]:
                     suppx.append(qcol)
 
@@ -132,17 +161,22 @@ class CssCode(BaseCode):
                     [
                         (
                             suppx[i],
-                            self.nqubits + row_index,
-                            max(schedule[suppx[i]], schedule[self.nqubits + row_index]),
+                            self.num_data_qubits + row_index,
+                            max(
+                                schedule[suppx[i]],
+                                schedule[self.num_data_qubits + row_index],
+                            ),
                         )
                     ]
                 )
 
                 schedule[suppx[i]] = (
-                    max(schedule[suppx[i]], schedule[self.nqubits + row_index]) + 1
+                    max(schedule[suppx[i]], schedule[self.num_data_qubits + row_index])
+                    + 1
                 )
-                schedule[self.nqubits + row_index] = (
-                    max(schedule[suppx[i]], schedule[self.nqubits + row_index]) + 1
+                schedule[self.num_data_qubits + row_index] = (
+                    max(schedule[suppx[i]], schedule[self.num_data_qubits + row_index])
+                    + 1
                 )
 
         for row_index in range(len(self.Hz)):
@@ -150,7 +184,7 @@ class CssCode(BaseCode):
             zrow = self.Hz[row_index]
             suppz = []
 
-            for qcol in range(self.nqubits):
+            for qcol in range(self.num_data_qubits):
                 if zrow[qcol]:
                     suppz.append(qcol)
 
@@ -160,10 +194,12 @@ class CssCode(BaseCode):
                     [
                         (
                             suppz[i],
-                            self.nqubits + len(self.Hx) + row_index,
+                            self.num_data_qubits + len(self.Hx) + row_index,
                             max(
                                 schedule[suppz[i]],
-                                schedule[self.nqubits + len(self.Hx) + row_index],
+                                schedule[
+                                    self.num_data_qubits + len(self.Hx) + row_index
+                                ],
                             ),
                         )
                     ]
@@ -172,64 +208,43 @@ class CssCode(BaseCode):
                 schedule[suppz[i]] = (
                     max(
                         schedule[suppz[i]],
-                        schedule[self.nqubits + len(self.Hx) + row_index],
+                        schedule[self.num_data_qubits + len(self.Hx) + row_index],
                     )
                     + 1
                 )
-                schedule[self.nqubits + len(self.Hx) + row_index] = (
+                schedule[self.num_data_qubits + len(self.Hx) + row_index] = (
                     max(
                         schedule[suppz[i]],
-                        schedule[self.nqubits + len(self.Hx) + row_index],
+                        schedule[self.num_data_qubits + len(self.Hx) + row_index],
                     )
                     + 1
                 )
 
-    def compute_x_logicals(self) -> list[list[int]]:
+    def compute_logicals(self, logical: str = "Z") -> list[list[int]]:
         r"""
         Function for computing a set of logical operators for the input
         parity check operators.
         Find the image and kernel for each linear code.
+
+        :param logical: The type of logical operator to compute, either "X" or "Z".
+        :return: A list of logical operators.
         """
 
-        # First find the kernel of Hz
+        if logical == "Z":
+            H1 = self.Hz
+            H2 = self.Hx
+        else:
+            H1 = self.Hx
+            H2 = self.Hz
 
-        zkern = compute_kernel(self.Hz)
+        # First find the kernel of H2
+        Ker_H2 = compute_kernel(H2)
 
-        # now find elements of ker Hz that are independent of im Hx
+        # Find elements of Ker(H2) that are independent of Im(H1)
+        stack = np.vstack([H1, Ker_H2])
+        pivots = find_pivots(stack)
 
-        Hxw = [row for row in self.Hx]
+        # Only choose rows introduced by Ker(H2)
+        L = [stack[ii, :] for ii in pivots if ii >= len(H1)]
 
-        Hxw += zkern
-
-        xpivots = find_pivots(Hxw)
-
-        xlogs = [
-            Hxw[ii] for ii in xpivots if ii >= len(self.Hx)
-        ]  # only choose rows introduced by zkern
-
-        return xlogs
-
-    def compute_z_logicals(self) -> list[list[int]]:
-        r"""
-        Function for computing a set of logical operators for the input
-        parity check operators.
-        Find the image and kernel for each linear code.
-        """
-
-        # First find the kernel of Hz
-
-        xkern = compute_kernel(self.Hx)
-
-        # now find elements of ker Hz that are independent of im Hx
-
-        Hzw = [row for row in self.Hz]
-
-        Hzw += xkern
-
-        zpivots = find_pivots(Hzw)
-
-        zlogs = [
-            Hzw[ii] for ii in zpivots if ii >= len(self.Hz)
-        ]  # only choose rows introduced by xkern
-
-        return zlogs
+        return L

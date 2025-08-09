@@ -99,20 +99,13 @@ class ThresholdLAB:
         return self._code
 
     @property
-    def collected_stats(self) -> dict:
-        r"""
-        The collected stats during sampling.
-        """
-        return self._collected_stats
-
-    @property
     def decoder(self) -> str:
         r"""Return the decoder."""
         return self._decoder
 
     @property
-    def samples(self) -> None:
-        r"""Return samples."""
+    def samples(self) -> dict[str, any]:
+        r"""Return the collected samples."""
         return self._samples
 
     def logic_check(self) -> str:
