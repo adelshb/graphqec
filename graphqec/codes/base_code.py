@@ -191,12 +191,14 @@ class BaseCode(ABC):
         self._memory_circuit = Circuit()
 
         if logic_check == "Z":
-            self._memory_circuit.append("R", all_qubits)
+            self._memory_circuit.append("R", data_qubits)
+            self._memory_circuit.append("R", all_check_qubits)
             self._memory_circuit.append(
                 "DEPOLARIZE1", all_qubits, self.depolarize1_rate
             )
         elif logic_check == "X":
-            self._memory_circuit.append("RX", all_qubits)
+            self._memory_circuit.append("RX", data_qubits)
+            self._memory_circuit.append("R", all_check_qubits)
             self._memory_circuit.append(
                 "DEPOLARIZE1", all_qubits, self.depolarize1_rate
             )
@@ -206,19 +208,16 @@ class BaseCode(ABC):
         )
 
         if logic_check == "Z":
-            print("Z logic check initialization")
             for qz in check_qubits["Z-check"]:
                 rec = self.get_target_rec(qubit=qz, round=0)
                 self._memory_circuit.append("DETECTOR", [target_rec(rec)])
         elif logic_check == "X":
-            print("X logic check initialization")
             for qx in check_qubits["X-check"]:
                 rec = self.get_target_rec(qubit=qx, round=0)
                 self._memory_circuit.append("DETECTOR", [target_rec(rec)])
 
         # Body rounds
         for round in range(1, number_of_rounds):
-            print(f"Round {round} of {number_of_rounds}")
 
             self.append_stab_circuit(
                 round=round, data_qubits=data_qubits, check_qubits=check_qubits

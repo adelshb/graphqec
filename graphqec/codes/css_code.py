@@ -46,11 +46,18 @@ class CssCode(BaseCode):
         # self._logic_check = [self.compute_x_logicals(), self.compute_z_logicals()]
         # assert len(self._logic_check[0]) == len(self._logic_check[1])
 
-        self._logic_check = [
-            ii
-            for ii in range(len(self.compute_z_logicals()[0]))
-            if self.compute_z_logicals()[0][ii]
-        ]
+        self._logic_check = {
+            "Z": [
+                ii
+                for ii in range(len(self.compute_z_logicals()[0]))
+                if self.compute_z_logicals()[0][ii]
+            ],
+            "X": [
+                ii
+                for ii in range(len(self.compute_x_logicals()[0]))
+                if self.compute_x_logicals()[0][ii]
+            ],
+        }
 
         super().__init__(*args, **kwargs)
 
