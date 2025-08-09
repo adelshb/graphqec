@@ -282,14 +282,25 @@ class BaseCode(ABC):
                 self._memory_circuit.append("DETECTOR", [target_rec(r) for r in recs])
 
         # Adding the comparison with the expected state
-        recs = [
-            self.get_target_rec(qubit=q, round=number_of_rounds)
-            for q in self.logic_check[logic_check]
-        ]
-        recs_str = " ".join(f"rec[{rec}]" for rec in recs)
-        self._memory_circuit.append_from_stim_program_text(
-            f"OBSERVABLE_INCLUDE(0) {recs_str}"
-        )
+        if isinstance(self.logic_check[logic_check][0], int):
+            recs = [
+                self.get_target_rec(qubit=q, round=number_of_rounds)
+                for q in self.logic_check[logic_check]
+            ]
+            recs_str = " ".join(f"rec[{rec}]" for rec in recs)
+            self._memory_circuit.append_from_stim_program_text(
+                f"OBSERVABLE_INCLUDE(0) {recs_str}"
+            )
+        elif isinstance(self.logic_check[logic_check][0], list):
+            for logic_check in self.logic_check[logic_check]:
+                recs = [
+                    self.get_target_rec(qubit=q, round=number_of_rounds)
+                    for q in logic_check
+                ]
+                recs_str = " ".join(f"rec[{rec}]" for rec in recs)
+                self._memory_circuit.append_from_stim_program_text(
+                    f"OBSERVABLE_INCLUDE(0) {recs_str}"
+                )
 
     def append_stab_circuit(
         self, round: int, data_qubits: list[int], check_qubits: dict[str, list[int]]
