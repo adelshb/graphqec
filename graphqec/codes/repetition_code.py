@@ -24,6 +24,7 @@ class RepetitionCode(BaseCode):
 
     def __init__(
         self,
+        distance: int,
         *args,
         **kwargs,
     ) -> None:
@@ -31,7 +32,10 @@ class RepetitionCode(BaseCode):
         Initialize the Repetition code instance.
         """
 
-        self._logic_check = [0]
+        self._distance = distance
+        self._name = "Repetition"
+        self._checks = ["Z-check"]
+        self._logic_check = {"Z": [0]}
 
         super().__init__(*args, **kwargs)
 

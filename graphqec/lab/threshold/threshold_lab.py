@@ -44,6 +44,8 @@ class ThresholdLAB:
         "_collected_stats",
         "_decoder",
         "_samples",
+        "_code_name",
+        "_logic_check",
     )
 
     def __init__(
@@ -52,6 +54,7 @@ class ThresholdLAB:
         configurations: dict[str, any],
         error_rates: list[float],
         decoder: str = "pymatching",
+        logic_check: str = "Z",
     ) -> None:
         r"""
         Initialization of the Base Code class.
@@ -72,6 +75,7 @@ class ThresholdLAB:
             ValueError("This decoder is not available.")
 
         self._collected_stats = {}
+        self._logic_check = logic_check
 
     @property
     def configurations(self) -> list[int]:
@@ -111,7 +115,13 @@ class ThresholdLAB:
         r"""Return samples."""
         return self._samples
 
-    def generate_sinter_tasks(self):
+    def logic_check(self) -> str:
+        r"""
+        The logic check type.
+        """
+        return self._logic_check
+
+    def generate_sinter_tasks(self, logic_check: str = "Z") -> sinter.TaskGenerator:
         r"""Generates tasks using Stim's circuit generation."""
 
         # Loop over configurations
@@ -125,12 +135,17 @@ class ThresholdLAB:
                     depolarize1_rate=prob_error,
                     depolarize2_rate=prob_error,
                 )
-                code.build_memory_circuit(number_of_rounds=code.distance)
-                circ = code.memory_circuit
 
+                if logic_check not in code.logic_check.keys():
+                    raise ValueError(
+                        f"Logic check {logic_check} is not supported by {code.name} code."
+                    )
+
+                code.build_memory_circuit(
+                    number_of_rounds=code.distance, logic_check=logic_check
+                )
                 metadata = {"name": code.name, "error": prob_error}
-
-                yield sinter.Task(circuit=circ, json_metadata=metadata)
+                yield sinter.Task(circuit=code.memory_circuit, json_metadata=metadata)
 
     def collect_stats(
         self,
@@ -138,6 +153,7 @@ class ThresholdLAB:
         max_shots: int = 10**4,
         max_errors: int = 1000,
         decoder_params: dict[str, any] | None = None,
+        logic_check: str = "Z",
     ) -> None:
         r"""
         Collect sampling statistics over ranges of distance and errors.
@@ -163,17 +179,16 @@ class ThresholdLAB:
                 num_workers=num_workers,
                 max_shots=max_shots,
                 max_errors=max_errors,
-                tasks=self.generate_sinter_tasks(),
+                tasks=self.generate_sinter_tasks(logic_check=logic_check),
                 decoders=[self.decoder],
                 custom_decoders=custom_decoder,
-                # custom_decoders= { "mwpf": SinterMWPFDecoder(cluster_node_limit=50) }
             )
         else:
             self._samples = sinter.collect(
                 num_workers=num_workers,
                 max_shots=max_shots,
                 max_errors=max_errors,
-                tasks=self.generate_sinter_tasks(),
+                tasks=self.generate_sinter_tasks(logic_check=logic_check),
                 decoders=[self.decoder],
             )
 

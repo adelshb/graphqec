@@ -14,12 +14,12 @@ from __future__ import annotations
 
 from graphqec.codes.base_code import BaseCode
 
-__all__ = ["RotatedSurfaceCode"]
+__all__ = ["UnrotatedSurfaceCode"]
 
 
-class RotatedSurfaceCode(BaseCode):
+class UnrotatedSurfaceCode(BaseCode):
     r"""
-    A class for the Rotated Surface code.
+    A class for the Unrotated Surface code.
     """
 
     def __init__(
@@ -29,31 +29,33 @@ class RotatedSurfaceCode(BaseCode):
         **kwargs,
     ) -> None:
         r"""
-        Initialize the Rotated Surface Code instance.
+        Initialize the Unrotated Surface Code instance.
         """
 
         self._distance = distance
-        self._name = f"Rotated Surface [[{self.distance**2},1,{self.distance}]]"
+        self._name = f"Unrotated Surface [[{(2*self.distance-1)**2},1,{self.distance}]]"
         self._checks = ["Z-check", "X-check"]
 
         super().__init__(*args, **kwargs)
 
         self._logic_check = {
             "Z": [i for i in range(self.distance)],
-            "X": [i * self.distance for i in range(self.distance)],
+            "X": [i * (2 * self.distance - 1) for i in range(self.distance)],
         }
 
     def build_graph(self) -> None:
         r"""
-        Build the 2D lattice of the rotated surface code.
+        Build the 2D lattice of the unrotated surface code.
         """
 
         # Add the nodes for the data qubits
-        data_qubits_coords = [
-            (col, row)
-            for row in range(1, self.distance + 1)
-            for col in range(1, self.distance + 1)
-        ]
+        data_qubits_coords = []
+
+        for row in range(2 * self.distance - 1):
+            for col in range(2 * self.distance - 1):
+                if not (row + col) % 2:
+                    data_qubits_coords.append((col, row))
+
         data = [
             (i, {"type": "data", "label": None, "coords": data_qubits_coords[i]})
             for i in range(len(data_qubits_coords))
@@ -61,11 +63,13 @@ class RotatedSurfaceCode(BaseCode):
         self._graph.add_nodes_from(data)
 
         # Add the nodes the X check qubits.
-        x_qubits_coords = [
-            (col + (0.5 if row % 2 != 0 else -0.5), row - 0.5)
-            for row in range(1, self.distance + 2)
-            for col in range(2, self.distance, 2)
-        ]
+        x_qubits_coords = []
+
+        for row in range(2 * self.distance - 1):
+            for col in range(2 * self.distance - 1):
+                if row % 2 and not col % 2:
+                    x_qubits_coords.append((row, col))
+
         x_check = [
             (
                 i + len(data),
@@ -81,7 +85,7 @@ class RotatedSurfaceCode(BaseCode):
 
             coords = qx[1]["coords"]
             ordered_neighbors = self.get_neighbor_qubits(
-                coord=coords, index_order=[1, 3, 0, 2]
+                coord=coords, index_order=[0, 1, 2, 3]
             )
 
             for order, neighbor in enumerate(ordered_neighbors):
@@ -90,11 +94,12 @@ class RotatedSurfaceCode(BaseCode):
         self._graph.add_weighted_edges_from(x_edges)
 
         # Add the nodes the Z check qubits.
-        z_qubits_coords = [
-            (col + (0.5 if row % 2 == 0 else -0.5), row + 0.5)
-            for row in range(1, self.distance)
-            for col in range(1, self.distance + 1, 2)
-        ]
+        z_qubits_coords = []
+
+        for row in range(2 * self.distance - 1):
+            for col in range(2 * self.distance - 1):
+                if col % 2 and not row % 2:
+                    z_qubits_coords.append((row, col))
         z_check = [
             (
                 i + len(data) + len(x_check),
@@ -110,7 +115,7 @@ class RotatedSurfaceCode(BaseCode):
 
             coords = qz[1]["coords"]
             ordered_neighbors = self.get_neighbor_qubits(
-                coord=coords, index_order=[1, 0, 3, 2]
+                coord=coords, index_order=[0, 2, 1, 3]
             )
 
             for order, neighbor in enumerate(ordered_neighbors):
@@ -133,7 +138,10 @@ class RotatedSurfaceCode(BaseCode):
         """
         col, row = coord
         neighbors_coords = [
-            (col + dx, row + dy) for dx in [-0.5, 0.5] for dy in [-0.5, 0.5]
+            (col, row - 1),
+            (col - 1, row),
+            (col + 1, row),
+            (col, row + 1),
         ]
 
         neighbors = []
