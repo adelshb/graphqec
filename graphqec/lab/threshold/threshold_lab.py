@@ -161,12 +161,12 @@ class ThresholdLAB:
 
         if __available_decoders__[self.decoder] is not None:
 
-            if decoder_params is None:
-                custom_decoder = {self.decoder: __available_decoders__[self.decoder]()}
-            else:
-                custom_decoder = {
-                    self.decoder: __available_decoders__[self.decoder](**decoder_params)
-                }
+            # if decoder_params is None:
+            #     custom_decoder = {self.decoder: __available_decoders__[self.decoder]()}
+            # else:
+            #     custom_decoder = {
+            #         self.decoder: __available_decoders__[self.decoder](**decoder_params)
+            #     }
 
             self._samples = sinter.collect(
                 num_workers=num_workers,
@@ -174,7 +174,7 @@ class ThresholdLAB:
                 max_errors=max_errors,
                 tasks=self.generate_sinter_tasks(logic_check=logic_check),
                 decoders=[self.decoder],
-                custom_decoders=custom_decoder,
+                custom_decoders=decoder_params,
             )
         else:
             self._samples = sinter.collect(
