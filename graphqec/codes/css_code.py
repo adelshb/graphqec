@@ -31,6 +31,8 @@ class CssCode(BaseCode):
         "_Hx",
         "_Hz",
         "_num_data_qubits",
+        "_L_z",
+        "_L_x",
     )
 
     def __init__(
@@ -54,21 +56,25 @@ class CssCode(BaseCode):
         self._Hz = Hz
         self._num_data_qubits = len(Hz[0])
 
-        L_z = self.compute_logicals(logical="Z")
-        L_x = self.compute_logicals(logical="X")
+        self._L_z = self.compute_logicals(logical="Z")
+        self._L_x = self.compute_logicals(logical="X")
 
         self._logic_check = {
-            "Z": [ii for ii in range(len(L_z[0])) if L_z[0][ii]],
-            "X": [ii for ii in range(len(L_x[0])) if L_x[0][ii]],
+            "Z": [np.where(row == 1)[0].tolist() for row in self.L_z],
+            "X": [np.where(row == 1)[0].tolist() for row in self.L_x],
         }
 
         super().__init__(*args, **kwargs)
 
         self._distance = self.distance_upper_bound()
         if name is not None:
-            self._name = f"{name} [[{self.num_data_qubits},{len(self._logic_check['Z'])},{self.distance}]]"
+            self._name = (
+                f"{name} [[{self.num_data_qubits},{len(self._L_z)},{self.distance}]]"
+            )
         else:
-            self._name = f"CSS [[{self.num_data_qubits},{len(self._logic_check['Z'])},{self.distance}]]"
+            self._name = (
+                f"CSS [[{self.num_data_qubits},{len(self._L_z)},{self.distance}]]"
+            )
 
     @property
     def Hx(self) -> list[list[int]]:
@@ -91,14 +97,28 @@ class CssCode(BaseCode):
         """
         return self._num_data_qubits
 
+    @property
+    def L_z(self) -> np.ndarray:
+        r"""
+        The logical operators for Z.
+        """
+        return self._L_z
+
+    @property
+    def L_x(self) -> np.ndarray:
+        r"""
+        The logical operators for X.
+        """
+        return self._L_x
+
     def distance_upper_bound(self) -> int:
         r"""
         Compute the distance upper bound of the CSS code.
         The distance is defined as the minimum of the distances of the X and Z.
         """
-        Lx, Lz = self._logic_check
-        xdistance = min([len(row) for row in Lx])
-        zdistance = min([len(row) for row in Lz])
+
+        xdistance = min([sum(row) for row in self.L_x])
+        zdistance = min([sum(row) for row in self.L_z])
 
         return min([xdistance, zdistance])
 
@@ -245,6 +265,6 @@ class CssCode(BaseCode):
         pivots = find_pivots(stack)
 
         # Only choose rows introduced by Ker(H2)
-        L = [stack[ii, :] for ii in pivots if ii >= len(H1)]
+        L = np.array([stack[ii, :] for ii in pivots if ii >= len(H1)])
 
         return L
