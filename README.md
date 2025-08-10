@@ -18,7 +18,7 @@
 - **[Shor Code](#)** (**in progress**)
 - **[Rotated Surface Code](notebooks/rotated_surface_code.ipynb)**
 - **[Bivariate Bicycle Code](#)** (**in progress**).
-- **[CSS Code]()**
+- **[CSS Code]
 
 ## Installation
 
@@ -95,6 +95,8 @@ th.plot_stats(
 )
 ```
 
+![Threshold Repetition Code](assets/plots/threshold_repetition_code.png)
+
 ### Building CSS Code
 
 ```py
@@ -118,8 +120,6 @@ steane = CssCode(
     Hz = H_steane,
 )
 ```
-
-![Threshold Repetition Code](assets/plots/threshold_repetition_code.png)
 
 ## Contributing
 
