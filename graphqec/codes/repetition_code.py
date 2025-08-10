@@ -33,13 +33,15 @@ class RepetitionCode(BaseCode):
         """
 
         self._distance = distance
+        self._num_data_qubits = self.distance
+        self._num_logical_qubits = 1
         self._name = "Repetition"
         self._checks = ["Z-check"]
         self._logic_check = {"Z": [0]}
 
         super().__init__(*args, **kwargs)
 
-        self._name = f"Repetition [[{2*self.distance-1},1,{self.distance}]]"
+        self._name = f"Repetition [[{self.num_data_qubits},{self.num_logical_qubits},{self.distance}]]"
 
     def build_graph(self) -> None:
         r"""

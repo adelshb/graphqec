@@ -94,8 +94,10 @@ class BivariateBicycleCode(BaseCode):
         super().__init__(*args, **kwargs)
 
         n, k, d = self.get_parameters()
+        self._num_data_qubits = n
+        self._num_logical_qubits = k
+        self._distance = d
         self._name = f"Bivariate Bicycle [[{n},{k},{d}]]"
-        self._distance = 3
 
     def compute_check_matrices(self) -> None:
         r""" """

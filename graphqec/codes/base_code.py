@@ -32,6 +32,8 @@ class BaseCode(ABC):
     __slots__ = (
         "_name",
         "_distance",
+        "_num_data_qubits",
+        "_num_logical_qubits",
         "_memory_circuit",
         "_depolarize1_rate",
         "_depolarize2_rate",
@@ -76,6 +78,20 @@ class BaseCode(ABC):
         The name of the code.
         """
         return self._name
+
+    @property
+    def num_data_qubits(self) -> int:
+        r"""
+        The number of data qubits.
+        """
+        return self._num_data_qubits
+
+    @property
+    def num_logical_qubits(self) -> int:
+        r"""
+        The number of logical qubits.
+        """
+        return self._num_logical_qubits
 
     @property
     def distance(self) -> int:
@@ -191,12 +207,14 @@ class BaseCode(ABC):
         self._memory_circuit = Circuit()
 
         if logic_check == "Z":
-            self._memory_circuit.append("R", all_qubits)
+            self._memory_circuit.append("R", data_qubits)
+            self._memory_circuit.append("R", all_check_qubits)
             self._memory_circuit.append(
                 "DEPOLARIZE1", all_qubits, self.depolarize1_rate
             )
         elif logic_check == "X":
-            self._memory_circuit.append("RX", all_qubits)
+            self._memory_circuit.append("RX", data_qubits)
+            self._memory_circuit.append("R", all_check_qubits)
             self._memory_circuit.append(
                 "DEPOLARIZE1", all_qubits, self.depolarize1_rate
             )
@@ -280,14 +298,25 @@ class BaseCode(ABC):
                 self._memory_circuit.append("DETECTOR", [target_rec(r) for r in recs])
 
         # Adding the comparison with the expected state
-        recs = [
-            self.get_target_rec(qubit=q, round=number_of_rounds)
-            for q in self.logic_check[logic_check]
-        ]
-        recs_str = " ".join(f"rec[{rec}]" for rec in recs)
-        self._memory_circuit.append_from_stim_program_text(
-            f"OBSERVABLE_INCLUDE(0) {recs_str}"
-        )
+        if isinstance(self.logic_check[logic_check][0], int):
+            recs = [
+                self.get_target_rec(qubit=q, round=number_of_rounds)
+                for q in self.logic_check[logic_check]
+            ]
+            recs_str = " ".join(f"rec[{rec}]" for rec in recs)
+            self._memory_circuit.append_from_stim_program_text(
+                f"OBSERVABLE_INCLUDE(0) {recs_str}"
+            )
+        elif isinstance(self.logic_check[logic_check][0], list):
+            for logic_check in self.logic_check[logic_check]:
+                recs = [
+                    self.get_target_rec(qubit=q, round=number_of_rounds)
+                    for q in logic_check
+                ]
+                recs_str = " ".join(f"rec[{rec}]" for rec in recs)
+                self._memory_circuit.append_from_stim_program_text(
+                    f"OBSERVABLE_INCLUDE(0) {recs_str}"
+                )
 
     def append_stab_circuit(
         self, round: int, data_qubits: list[int], check_qubits: dict[str, list[int]]

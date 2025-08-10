@@ -12,6 +12,7 @@
 
 from __future__ import annotations
 import multiprocessing
+import warnings
 
 import sinter
 import matplotlib.pyplot as plt
@@ -44,6 +45,7 @@ class ThresholdLAB:
         "_collected_stats",
         "_decoder",
         "_samples",
+        "_code_name",
         "_logic_check",
     )
 
@@ -98,20 +100,13 @@ class ThresholdLAB:
         return self._code
 
     @property
-    def collected_stats(self) -> dict:
-        r"""
-        The collected stats during sampling.
-        """
-        return self._collected_stats
-
-    @property
     def decoder(self) -> str:
         r"""Return the decoder."""
         return self._decoder
 
     @property
-    def samples(self) -> None:
-        r"""Return samples."""
+    def samples(self) -> dict[str, any]:
+        r"""Return the collected samples."""
         return self._samples
 
     def logic_check(self) -> str:
@@ -143,7 +138,13 @@ class ThresholdLAB:
                 code.build_memory_circuit(
                     number_of_rounds=code.distance, logic_check=logic_check
                 )
-                metadata = {"name": code.name, "error": prob_error}
+                metadata = {
+                    "name": code.name,
+                    "error": prob_error,
+                    "n": int(code.num_data_qubits),
+                    "k": int(code.num_logical_qubits),
+                    "d": int(code.distance),
+                }
                 yield sinter.Task(circuit=code.memory_circuit, json_metadata=metadata)
 
     def collect_stats(
@@ -167,12 +168,12 @@ class ThresholdLAB:
 
         if __available_decoders__[self.decoder] is not None:
 
-            if decoder_params is None:
-                custom_decoder = {self.decoder: __available_decoders__[self.decoder]()}
-            else:
-                custom_decoder = {
-                    self.decoder: __available_decoders__[self.decoder](**decoder_params)
-                }
+            # if decoder_params is None:
+            #     custom_decoder = {self.decoder: __available_decoders__[self.decoder]()}
+            # else:
+            #     custom_decoder = {
+            #         self.decoder: __available_decoders__[self.decoder](**decoder_params)
+            #     }
 
             self._samples = sinter.collect(
                 num_workers=num_workers,
@@ -180,7 +181,7 @@ class ThresholdLAB:
                 max_errors=max_errors,
                 tasks=self.generate_sinter_tasks(logic_check=logic_check),
                 decoders=[self.decoder],
-                custom_decoders=custom_decoder,
+                custom_decoders=decoder_params,
             )
         else:
             self._samples = sinter.collect(
@@ -197,6 +198,7 @@ class ThresholdLAB:
         x_max: float | None = None,
         y_min: float | None = None,
         y_max: float | None = None,
+        pseudo_threshold: bool = False,
     ) -> None:
         r"""
         Plot the collected data
@@ -216,16 +218,31 @@ class ThresholdLAB:
             x_func=lambda stat: stat.json_metadata["error"],
         )
 
+        if pseudo_threshold:
+            if not self.check_is_family(self.samples):
+                warnings.warn("Inconsistent sample families detected.")
+            else:
+                k = self.samples[0].json_metadata["k"]
+                ax.plot(self.error_rates, k * self.error_rates)
+
         if x_min is not None and x_max is not None:
             ax.set_xlim(x_min, x_max)
         if y_min is not None and y_max is not None:
             ax.set_ylim(y_min, y_max)
 
         ax.loglog()
-        ax.set_xlabel("Phyical Error Rate")
+        ax.set_xlabel("Physical Error Rate")
         ax.set_ylabel("Logical Error Rate")
         ax.grid(which="major")
         ax.grid(which="minor")
         ax.legend()
 
         plt.show()
+
+    @staticmethod
+    def check_is_family(samples: list[sinter.TaskStats]) -> bool:
+        r"""
+        Check if the given samples belong to the same family.
+        """
+        first_name = samples[0].json_metadata["name"]
+        return all(sample.json_metadata["name"] == first_name for sample in samples)

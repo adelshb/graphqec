@@ -33,7 +33,9 @@ class UnrotatedSurfaceCode(BaseCode):
         """
 
         self._distance = distance
-        self._name = f"Unrotated Surface [[{(2*self.distance-1)**2},1,{self.distance}]]"
+        self._num_data_qubits = (2 * self.distance - 1) ** 2
+        self._num_logical_qubits = 1
+        self._name = f"Unrotated Surface [[{self.num_data_qubits},{self.num_logical_qubits},{self.distance}]]"
         self._checks = ["Z-check", "X-check"]
 
         super().__init__(*args, **kwargs)
