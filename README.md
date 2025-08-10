@@ -1,6 +1,6 @@
 ![Logo](assets/graph_qec_logo.png)
 
-# Graph QEC
+# Graph QEC:
 
 [![Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue)](https://opensource.org/licenses/Apache-2.0)
 
@@ -20,7 +20,7 @@
 - **[Rotated Surface Code](notebooks/rotated_surface_code.ipynb)**
 - **[Steane Code](notebooks/steane.ipynb)**
 - **[Toric Code](notebooks/toric_code.ipynb)**
-- **[Bivariate Bicycle Code](#)** (**in progress**)
+- **[Bivariate Bicycle Code](#)**(**in progress**)
 
 ## Installation
 
@@ -103,13 +103,6 @@ th.plot_stats(
 
 ```py
 from graphqec import CssCode
-
-th = ThresholdLAB(
-    configurations = [{"distance": d} for d in [3, 5, 7, 11]],
-    code = RepetitionCode,
-    error_rates = np.linspace(0, 0.2, 10),
-    decoder='pymatching'
-)
 
 H_steane = np.array([
     [1,1,1,1,0,0,0],
