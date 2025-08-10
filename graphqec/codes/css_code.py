@@ -30,7 +30,6 @@ class CssCode(BaseCode):
     __slots__ = (
         "_Hx",
         "_Hz",
-        "_num_data_qubits",
         "_L_z",
         "_L_x",
     )
@@ -59,6 +58,8 @@ class CssCode(BaseCode):
         self._L_z = self.compute_logicals(logical="Z")
         self._L_x = self.compute_logicals(logical="X")
 
+        self._num_logical_qubits = len(self._L_z)
+
         self._logic_check = {
             "Z": [np.where(row == 1)[0].tolist() for row in self.L_z],
             "X": [np.where(row == 1)[0].tolist() for row in self.L_x],
@@ -68,13 +69,9 @@ class CssCode(BaseCode):
 
         self._distance = self.distance_upper_bound()
         if name is not None:
-            self._name = (
-                f"{name} [[{self.num_data_qubits},{len(self._L_z)},{self.distance}]]"
-            )
+            self._name = f"{name} [[{self.num_data_qubits},{self.num_logical_qubits},{self.distance}]]"
         else:
-            self._name = (
-                f"CSS [[{self.num_data_qubits},{len(self._L_z)},{self.distance}]]"
-            )
+            self._name = f"CSS [[{self.num_data_qubits},{self.num_logical_qubits},{self.distance}]]"
 
     @property
     def Hx(self) -> list[list[int]]:
@@ -89,13 +86,6 @@ class CssCode(BaseCode):
         The Z check matrix of the CSS code.
         """
         return self._Hz
-
-    @property
-    def num_data_qubits(self) -> int:
-        r"""
-        The number of data qubits in the CSS code.
-        """
-        return self._num_data_qubits
 
     @property
     def L_z(self) -> np.ndarray:

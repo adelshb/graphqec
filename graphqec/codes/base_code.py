@@ -32,6 +32,8 @@ class BaseCode(ABC):
     __slots__ = (
         "_name",
         "_distance",
+        "_num_data_qubits",
+        "_num_logical_qubits",
         "_memory_circuit",
         "_depolarize1_rate",
         "_depolarize2_rate",
@@ -76,6 +78,20 @@ class BaseCode(ABC):
         The name of the code.
         """
         return self._name
+
+    @property
+    def num_data_qubits(self) -> int:
+        r"""
+        The number of data qubits.
+        """
+        return self._num_data_qubits
+
+    @property
+    def num_logical_qubits(self) -> int:
+        r"""
+        The number of logical qubits.
+        """
+        return self._num_logical_qubits
 
     @property
     def distance(self) -> int:
