@@ -1,22 +1,26 @@
-<!-- ![Logo](qec-with-code_logo.png) -->
-# Graph QEC
+![Logo](assets/graph_qec_logo.png)
+
+# Graph QEC:
 
 [![Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue)](https://opensource.org/licenses/Apache-2.0)
 
 **Graph QEC** is a Python package under development that provides tools for implementing **Quantum Error Correction Codes (QECC)** by constructing their **Tanner Graphs**, automatically compiling them into **[Stim](https://github.com/quantumlib/Stim)** circuits, and computing error correction thresholds. This package allows researchers and developers to explore quantum error correction techniques, simulate quantum codes under gate error models, and analyze their performance through error thresholds.
 
-## Features
+## Why Graph QEC?
 
 - **Tanner Graph Representation**: Visualize and analyze quantum error correction codes through Tanner graphs, a graphical representation that simplifies the understanding of code structure and error syndromes.
 - **Stim Circuit Compilation**: Automatically compile Tanner graphs into **Stim** circuits, enabling easy integration with simulation tools for error correction and noise analysis.
-- **Threshold Computation**: Compute and analyze the error threshold of a quantum code, which indicates the error rate at which the code remains fault-tolerant.
+- **Threshold Computation**: Compute and analyze the error threshold of a quantum code with gate-level noise modeling, which indicates the error rate at which the code remains fault-tolerant.
+- **CSS Code Implementation**: Construct any CSS code from parity check matrices.
 
-## List of Implemented QEC Codes
+## Avasilable QEC codes
 
 - **[Repetition Code](notebooks/repetition_code.ipynb)**
-- **[Shor Code](#)** (**in progress**)
 - **[Rotated Surface Code](notebooks/rotated_surface_code.ipynb)**
-- **[Bivariate Bicycle Code](#)** (**in progress**).
+- **[Rotated Surface Code](notebooks/rotated_surface_code.ipynb)**
+- **[Steane Code](notebooks/steane.ipynb)**
+- **[Toric Code](notebooks/toric_code.ipynb)**
+- **[Bivariate Bicycle Code](#)**(**in progress**)
 
 ## Installation
 
@@ -72,26 +76,45 @@ rep.memory_circuit.diagram()
 ```py
 from graphqec import RepetitionCode, ThresholdLAB
 
-# Initialize the Threshold LAB instance
 th = ThresholdLAB(
-    distances= [3, 5, 7, 11],
-    code=RepetitionCode,
-    error_rates= np.linspace(0, 0.1, 10)
+    configurations = [{"distance": d} for d in [3, 5, 7, 11]],
+    code = RepetitionCode,
+    error_rates = np.linspace(0, 0.2, 10),
+    decoder='pymatching'
 )
 
-# Sampling and estimating logical error rates via Monte Carlo
-th.collect_stats(num_shots=10**4)
+th.collect_stats(
+    num_workers = 4,
+    max_shots = 10**5,
+    max_errors= 1000
+)
 
-# Plotting the collected statistics
 th.plot_stats(
-    x_min = 3e-2,
-    x_max = 1e-1,
-    y_min = 1e-3,
-    y_max = 5e-1
+    x_min = 2e-2,
+    x_max = 2e-1,
+    y_min = 1e-4,
+    y_max = 8e-1
 )
 ```
 
 ![Threshold Repetition Code](assets/plots/threshold_repetition_code.png)
+
+### Building CSS Code
+
+```py
+from graphqec import CssCode
+
+H_steane = np.array([
+    [1,1,1,1,0,0,0],
+    [0,1,1,0,1,1,0],
+    [0,0,1,1,0,1,1]
+])
+
+steane = CssCode(
+    Hx = H_steane,
+    Hz = H_steane,
+)
+```
 
 ## Contributing
 

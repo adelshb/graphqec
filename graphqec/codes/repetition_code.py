@@ -33,11 +33,15 @@ class RepetitionCode(BaseCode):
         """
 
         self._distance = distance
+        self._num_data_qubits = self.distance
+        self._num_logical_qubits = 1
         self._name = "Repetition"
         self._checks = ["Z-check"]
         self._logic_check = {"Z": [0]}
 
         super().__init__(*args, **kwargs)
+
+        self._name = f"Repetition [[{self.num_data_qubits},{self.num_logical_qubits},{self.distance}]]"
 
     def build_graph(self) -> None:
         r"""
@@ -45,11 +49,17 @@ class RepetitionCode(BaseCode):
         """
 
         self._graph.add_nodes_from(
-            [(i, {"type": "data", "coords": (i, i)}) for i in range(self.distance)]
+            [
+                (i, {"type": "data", "label": None, "coords": (i, i)})
+                for i in range(self.distance)
+            ]
         )
         self._graph.add_nodes_from(
             [
-                (i + self.distance, {"type": "Z-check", "coords": (i + 0.5, i + 0.5)})
+                (
+                    i + self.distance,
+                    {"type": "check", "label": "Z", "coords": (i + 0.5, i + 0.5)},
+                )
                 for i in range(self.distance - 1)
             ]
         )

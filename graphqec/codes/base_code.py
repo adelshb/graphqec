@@ -32,6 +32,8 @@ class BaseCode(ABC):
     __slots__ = (
         "_name",
         "_distance",
+        "_num_data_qubits",
+        "_num_logical_qubits",
         "_memory_circuit",
         "_depolarize1_rate",
         "_depolarize2_rate",
@@ -39,6 +41,7 @@ class BaseCode(ABC):
         "_graph",
         "_checks",
         "_logic_check",
+        "_length_sym_measurement",
     )
 
     def __init__(
@@ -63,13 +66,32 @@ class BaseCode(ABC):
 
         self._graph = nx.Graph()
         self.build_graph()
+        self.get_check_label()
 
-    @classmethod
-    def name(cls) -> str:
+        self._length_sym_measurement = max(
+            nx.get_edge_attributes(self.graph, "weight").values()
+        )
+
+    @property
+    def name(self) -> str:
         r"""
         The name of the code.
         """
-        return cls.__name__
+        return self._name
+
+    @property
+    def num_data_qubits(self) -> int:
+        r"""
+        The number of data qubits.
+        """
+        return self._num_data_qubits
+
+    @property
+    def num_logical_qubits(self) -> int:
+        r"""
+        The number of logical qubits.
+        """
+        return self._num_logical_qubits
 
     @property
     def distance(self) -> int:
@@ -134,6 +156,16 @@ class BaseCode(ABC):
         """
         return self._logic_check
 
+    def get_check_label(self) -> None:
+        r"""
+        Get the check labels.
+        """
+        node_categories = {}
+        for node, data in self.graph.nodes(data=True):
+            if data["type"] == "check":
+                node_categories[node] = f"{data['label']}-check"
+        self._checks = sorted(set(node_categories.values()))
+
     @abstractmethod
     def build_graph(self) -> None:
         r"""
@@ -165,7 +197,7 @@ class BaseCode(ABC):
             check_qubits[check] = [
                 node
                 for node, data in self.graph.nodes(data=True)
-                if data.get("type") == check
+                if f"{data.get("label")}-{data.get("type")}" == check
             ]
 
         temp = [item for item in check_qubits.values()]
@@ -175,12 +207,14 @@ class BaseCode(ABC):
         self._memory_circuit = Circuit()
 
         if logic_check == "Z":
-            self._memory_circuit.append("R", all_qubits)
+            self._memory_circuit.append("R", data_qubits)
+            self._memory_circuit.append("R", all_check_qubits)
             self._memory_circuit.append(
                 "DEPOLARIZE1", all_qubits, self.depolarize1_rate
             )
         elif logic_check == "X":
-            self._memory_circuit.append("RX", all_qubits)
+            self._memory_circuit.append("RX", data_qubits)
+            self._memory_circuit.append("R", all_check_qubits)
             self._memory_circuit.append(
                 "DEPOLARIZE1", all_qubits, self.depolarize1_rate
             )
@@ -264,20 +298,35 @@ class BaseCode(ABC):
                 self._memory_circuit.append("DETECTOR", [target_rec(r) for r in recs])
 
         # Adding the comparison with the expected state
-        recs = [
-            self.get_target_rec(qubit=q, round=number_of_rounds)
-            for q in self.logic_check[logic_check]
-        ]
-        recs_str = " ".join(f"rec[{rec}]" for rec in recs)
-        self._memory_circuit.append_from_stim_program_text(
-            f"OBSERVABLE_INCLUDE(0) {recs_str}"
-        )
+        if isinstance(self.logic_check[logic_check][0], int):
+            recs = [
+                self.get_target_rec(qubit=q, round=number_of_rounds)
+                for q in self.logic_check[logic_check]
+            ]
+            recs_str = " ".join(f"rec[{rec}]" for rec in recs)
+            self._memory_circuit.append_from_stim_program_text(
+                f"OBSERVABLE_INCLUDE(0) {recs_str}"
+            )
+        elif isinstance(self.logic_check[logic_check][0], list):
+            for logic_check in self.logic_check[logic_check]:
+                recs = [
+                    self.get_target_rec(qubit=q, round=number_of_rounds)
+                    for q in logic_check
+                ]
+                recs_str = " ".join(f"rec[{rec}]" for rec in recs)
+                self._memory_circuit.append_from_stim_program_text(
+                    f"OBSERVABLE_INCLUDE(0) {recs_str}"
+                )
 
     def append_stab_circuit(
         self, round: int, data_qubits: list[int], check_qubits: dict[str, list[int]]
     ) -> None:
         r"""
         Append the stabilizer circuit.
+
+        :param round: The correction round.
+        :param data_qubits: A list of data qubits index.
+        :param check_qubits: A list of check qubits.
         """
 
         temp = [item for item in check_qubits.values()]
@@ -300,7 +349,7 @@ class BaseCode(ABC):
         measured = {qd: False for qd in data_qubits}
 
         # Perform CNOTs with specific order to avoid hook errors
-        for order in range(1, 5):
+        for order in range(1, self._length_sym_measurement + 1):
             for check in check_qubits.keys():
                 for q in check_qubits[check]:
                     data = [
@@ -342,6 +391,13 @@ class BaseCode(ABC):
     def append_stab_element(
         self, data_qubit: any, check_qubit: any, check: str
     ) -> None:
+        r"""
+        Append a stabilizer circuit to the circuit.
+
+        :param data_qubits: A list of data qubits index.
+        :param check_qubits: A list of check qubits.
+        :param check: A string indicating what stabilizer we are doing.
+        """
 
         if check == "Z-check":
             Z_check(
@@ -395,6 +451,7 @@ class BaseCode(ABC):
         :param qubit: The qubit on which the measurement is performed.
         :param round: The round during which the measurement is performed.
         """
+
         try:
             return (
                 self.measurement.get_register_id(qubit=qubit, round=round)
@@ -409,7 +466,12 @@ class BaseCode(ABC):
         """
 
         # Extract qubit type for coloring
-        node_categories = nx.get_node_attributes(self.graph, "type")
+        node_categories = {}
+        for node, data in self.graph.nodes(data=True):
+            if data["label"] is not None:
+                node_categories[node] = f"{data['label']}-{data['type']}"
+            else:
+                node_categories[node] = data["type"]
 
         # Get the unique types
         unique_categories = sorted(set(node_categories.values()))
@@ -417,6 +479,8 @@ class BaseCode(ABC):
         # Custom color palette
         custom_colors = {
             "data": "#D3D3D3",  # grey
+            "L-data": "#FFCC99",  # orange
+            "R-data": "#FFB6C1",  # pink
             "Z-check": "#d62728",  # red
             "X-check": "#1f77b4",  # blue
             "Y-check": "#2ca02c",  # green

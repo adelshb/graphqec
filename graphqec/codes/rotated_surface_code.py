@@ -33,7 +33,9 @@ class RotatedSurfaceCode(BaseCode):
         """
 
         self._distance = distance
-        self._name = "Rotated Surface"
+        self._num_data_qubits = self.distance**2
+        self._num_logical_qubits = 1
+        self._name = f"Rotated Surface [[{self.num_data_qubits},{self.num_logical_qubits},{self.distance}]]"
         self._checks = ["Z-check", "X-check"]
 
         super().__init__(*args, **kwargs)
@@ -55,7 +57,7 @@ class RotatedSurfaceCode(BaseCode):
             for col in range(1, self.distance + 1)
         ]
         data = [
-            (i, {"type": "data", "coords": data_qubits_coords[i]})
+            (i, {"type": "data", "label": None, "coords": data_qubits_coords[i]})
             for i in range(len(data_qubits_coords))
         ]
         self._graph.add_nodes_from(data)
@@ -67,7 +69,10 @@ class RotatedSurfaceCode(BaseCode):
             for col in range(2, self.distance, 2)
         ]
         x_check = [
-            (i + len(data), {"type": "X-check", "coords": x_qubits_coords[i]})
+            (
+                i + len(data),
+                {"type": "check", "label": "X", "coords": x_qubits_coords[i]},
+            )
             for i in range(len(x_qubits_coords))
         ]
         self._graph.add_nodes_from(x_check)
@@ -95,7 +100,7 @@ class RotatedSurfaceCode(BaseCode):
         z_check = [
             (
                 i + len(data) + len(x_check),
-                {"type": "Z-check", "coords": z_qubits_coords[i]},
+                {"type": "check", "label": "Z", "coords": z_qubits_coords[i]},
             )
             for i in range(len(z_qubits_coords))
         ]
