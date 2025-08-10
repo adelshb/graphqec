@@ -12,13 +12,14 @@
 - **Stim Circuit Compilation**: Automatically compile Tanner graphs into **Stim** circuits, enabling easy integration with simulation tools for error correction and noise analysis.
 - **Threshold Computation**: Compute and analyze the error threshold of a quantum code, which indicates the error rate at which the code remains fault-tolerant.
 
-## List of Implemented QEC Codes
+## Specific examples of implemented QEC codes
 
 - **[Repetition Code](notebooks/repetition_code.ipynb)**
-- **[Shor Code](#)** (**in progress**)
 - **[Rotated Surface Code](notebooks/rotated_surface_code.ipynb)**
-- **[Bivariate Bicycle Code](#)** (**in progress**).
-- **[CSS Code]
+- **[Rotated Surface Code](notebooks/rotated_surface_code.ipynb)**
+- **[Steane Code](notebooks/steane.ipynb)**
+- **[Toric Code](notebooks/toric_code.ipynb)**
+- **[Bivariate Bicycle Code](#)** (**in progress**)
 
 ## Installation
 
