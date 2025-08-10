@@ -18,6 +18,7 @@
 - **[Shor Code](#)** (**in progress**)
 - **[Rotated Surface Code](notebooks/rotated_surface_code.ipynb)**
 - **[Bivariate Bicycle Code](#)** (**in progress**).
+- **[CSS Code]()**
 
 ## Installation
 
@@ -91,6 +92,30 @@ th.plot_stats(
     x_max = 2e-1,
     y_min = 1e-4,
     y_max = 8e-1
+)
+```
+
+### Building CSS Code
+
+```py
+from graphqec import CssCode
+
+th = ThresholdLAB(
+    configurations = [{"distance": d} for d in [3, 5, 7, 11]],
+    code = RepetitionCode,
+    error_rates = np.linspace(0, 0.2, 10),
+    decoder='pymatching'
+)
+
+H_steane = np.array([
+    [1,1,1,1,0,0,0],
+    [0,1,1,0,1,1,0],
+    [0,0,1,1,0,1,1]
+])
+
+steane = CssCode(
+    Hx = H_steane,
+    Hz = H_steane,
 )
 ```
 
