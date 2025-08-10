@@ -6,13 +6,14 @@
 
 **Graph QEC** is a Python package under development that provides tools for implementing **Quantum Error Correction Codes (QECC)** by constructing their **Tanner Graphs**, automatically compiling them into **[Stim](https://github.com/quantumlib/Stim)** circuits, and computing error correction thresholds. This package allows researchers and developers to explore quantum error correction techniques, simulate quantum codes under gate error models, and analyze their performance through error thresholds.
 
-## Features
+## Why Graph QEC
 
 - **Tanner Graph Representation**: Visualize and analyze quantum error correction codes through Tanner graphs, a graphical representation that simplifies the understanding of code structure and error syndromes.
 - **Stim Circuit Compilation**: Automatically compile Tanner graphs into **Stim** circuits, enabling easy integration with simulation tools for error correction and noise analysis.
-- **Threshold Computation**: Compute and analyze the error threshold of a quantum code, which indicates the error rate at which the code remains fault-tolerant.
+- **Threshold Computation**: Compute and analyze the error threshold of a quantum code with gate-level noise modeling, which indicates the error rate at which the code remains fault-tolerant.
+- **CSS Code Implementation**: Construct any CSS code from parity check matrices.
 
-## Specific examples of implemented QEC codes
+## Avasilable QEC codes
 
 - **[Repetition Code](notebooks/repetition_code.ipynb)**
 - **[Rotated Surface Code](notebooks/rotated_surface_code.ipynb)**
