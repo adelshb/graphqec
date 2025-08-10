@@ -74,14 +74,14 @@ class CssCode(BaseCode):
             self._name = f"CSS [[{self.num_data_qubits},{self.num_logical_qubits},{self.distance}]]"
 
     @property
-    def Hx(self) -> list[list[int]]:
+    def Hx(self) -> np.ndarray:
         r"""
         The X check matrix of the CSS code.
         """
         return self._Hx
 
     @property
-    def Hz(self) -> list[list[int]]:
+    def Hz(self) -> np.ndarray:
         r"""
         The Z check matrix of the CSS code.
         """
@@ -230,7 +230,7 @@ class CssCode(BaseCode):
                     + 1
                 )
 
-    def compute_logicals(self, logical: str = "Z") -> list[list[int]]:
+    def compute_logicals(self, logical: str = "Z") -> np.ndarray:
         r"""
         Function for computing a set of logical operators for the input
         parity check operators.
