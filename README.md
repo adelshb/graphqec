@@ -1,4 +1,5 @@
-<!-- ![Logo](qec-with-code_logo.png) -->
+![Logo](assets/graph_qec_logo.png)
+
 # Graph QEC
 
 [![Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue)](https://opensource.org/licenses/Apache-2.0)
