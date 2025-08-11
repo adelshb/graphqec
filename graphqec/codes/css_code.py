@@ -152,83 +152,7 @@ class CssCode(BaseCode):
             ]
         )
 
-        schedule = {
-            q: 1 for q in range(self.num_data_qubits + len(self.Hz) + len(self.Hx))
-        }
-
-        for row_index in range(len(self.Hx)):
-
-            xrow = self.Hx[row_index]
-            suppx = []
-
-            for qcol in range(self.num_data_qubits):
-                if xrow[qcol]:
-                    suppx.append(qcol)
-
-            for i in range(len(suppx)):
-
-                self._graph.add_weighted_edges_from(
-                    [
-                        (
-                            suppx[i],
-                            self.num_data_qubits + row_index,
-                            max(
-                                schedule[suppx[i]],
-                                schedule[self.num_data_qubits + row_index],
-                            ),
-                        )
-                    ]
-                )
-
-                schedule[suppx[i]] = (
-                    max(schedule[suppx[i]], schedule[self.num_data_qubits + row_index])
-                    + 1
-                )
-                schedule[self.num_data_qubits + row_index] = (
-                    max(schedule[suppx[i]], schedule[self.num_data_qubits + row_index])
-                    + 1
-                )
-
-        for row_index in range(len(self.Hz)):
-
-            zrow = self.Hz[row_index]
-            suppz = []
-
-            for qcol in range(self.num_data_qubits):
-                if zrow[qcol]:
-                    suppz.append(qcol)
-
-            for i in range(len(suppz)):
-
-                self._graph.add_weighted_edges_from(
-                    [
-                        (
-                            suppz[i],
-                            self.num_data_qubits + len(self.Hx) + row_index,
-                            max(
-                                schedule[suppz[i]],
-                                schedule[
-                                    self.num_data_qubits + len(self.Hx) + row_index
-                                ],
-                            ),
-                        )
-                    ]
-                )
-
-                schedule[suppz[i]] = (
-                    max(
-                        schedule[suppz[i]],
-                        schedule[self.num_data_qubits + len(self.Hx) + row_index],
-                    )
-                    + 1
-                )
-                schedule[self.num_data_qubits + len(self.Hx) + row_index] = (
-                    max(
-                        schedule[suppz[i]],
-                        schedule[self.num_data_qubits + len(self.Hx) + row_index],
-                    )
-                    + 1
-                )
+        self._graph.add_weighted_edges_from(self.greedy_scheduler())
 
     def compute_logicals(self, logical: str = "Z") -> np.ndarray:
         r"""
@@ -258,3 +182,77 @@ class CssCode(BaseCode):
         L = np.array([stack[ii, :] for ii in pivots if ii >= len(H1)])
 
         return L
+
+    def greedy_scheduler(self) -> list[tuple[int, int, int]]:
+        r"""
+        Function returning a dictionary that specifies the schedule of CNOTs
+        for the stabilizer measurement circuit.
+
+        Schedule to constitute a full circuit for the syndrome extraction,
+        specified by a coloration of the edges of the Tanner graph of the
+        code.
+        Using the structure of the Tanner graph, we focus on mapping
+        qubits to the order of labelings for the checks.
+        Default scheduler will measure all X stabilizers first
+        then all Z stabilizers, using a greedy algorithm.
+        """
+
+        xboard = np.array(self.Hx, dtype=int)
+        zboard = np.array(self.Hz, dtype=int)
+
+        for xrow in range(len(xboard)):
+
+            xcheck = xboard[xrow]
+
+            for qcol in range(self.num_data_qubits):
+
+                if xcheck[qcol]:
+                    if not xrow:
+                        current_qubit_slot = 0
+                    else:
+                        current_qubit_slot = max(xboard[:xrow, qcol])
+                    if not qcol:
+                        current_check_slot = 0
+                    else:
+                        current_check_slot = max(xboard[xrow, :qcol])
+
+                    xboard[xrow][qcol] = (
+                        max([current_check_slot, current_qubit_slot]) + 1
+                    )
+
+        for zrow in range(len(zboard)):
+
+            zcheck = zboard[zrow]
+
+            for qcol in range(self.num_data_qubits):
+
+                if zcheck[qcol]:
+                    if not zrow:
+                        current_qubit_slot = max(xboard[:, qcol])
+                    else:
+                        current_qubit_slot = max(
+                            max(xboard[:, qcol]), max(zboard[:zrow, qcol])
+                        )
+                    if not qcol:
+                        current_check_slot = 0
+                    else:
+                        current_check_slot = max(zboard[zrow, :qcol])
+
+                    zboard[zrow][qcol] = max(current_check_slot, current_qubit_slot) + 1
+
+        schedule = [
+            (ii, jj + self.num_data_qubits, xboard[jj][ii])
+            for ii in range(self.num_data_qubits)
+            for jj in range(len(xboard))
+            if xboard[jj][ii]
+        ]
+        schedule.extend(
+            [
+                (ii, jj + self.num_data_qubits + len(xboard), zboard[jj][ii])
+                for ii in range(self.num_data_qubits)
+                for jj in range(len(zboard))
+                if zboard[jj][ii]
+            ]
+        )
+
+        return schedule
