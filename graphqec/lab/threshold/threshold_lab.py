@@ -130,20 +130,23 @@ class ThresholdLAB:
                     depolarize2_rate=prob_error,
                 )
 
+                num_rounds = code.distance
+
                 if logic_check not in code.logic_check.keys():
                     raise ValueError(
                         f"Logic check {logic_check} is not supported by {code.name} code."
                     )
 
                 code.build_memory_circuit(
-                    number_of_rounds=code.distance, logic_check=logic_check
+                    number_of_rounds=num_rounds, logic_check=logic_check
                 )
                 metadata = {
                     "name": code.name,
                     "error": prob_error,
-                    "n": int(code.num_data_qubits),
+                    "n": int(code.num_physical_qubits),
                     "k": int(code.num_logical_qubits),
                     "d": int(code.distance),
+                    "r": num_rounds,
                 }
                 yield sinter.Task(circuit=code.memory_circuit, json_metadata=metadata)
 
@@ -163,6 +166,7 @@ class ThresholdLAB:
         :param max_errors: Maximum tolerated errors.
         :param decoder_params: The optional decoder parameters.
         """
+
         if num_workers is None:
             num_workers = multiprocessing.cpu_count() - 1
 
@@ -199,6 +203,7 @@ class ThresholdLAB:
         y_min: float | None = None,
         y_max: float | None = None,
         pseudo_threshold: bool = False,
+        method: str = "per_shot",
     ) -> None:
         r"""
         Plot the collected data
@@ -211,12 +216,27 @@ class ThresholdLAB:
 
         # Render a matplotlib plot of the data.
         fig, ax = plt.subplots(1, 1)
-        sinter.plot_error_rate(
-            ax=ax,
-            stats=self.samples,
-            group_func=lambda stat: stat.json_metadata["name"],
-            x_func=lambda stat: stat.json_metadata["error"],
-        )
+        if method == "per_shot":
+            sinter.plot_error_rate(
+                ax=ax,
+                stats=self.samples,
+                group_func=lambda stat: stat.json_metadata["name"],
+                x_func=lambda stat: stat.json_metadata["error"],
+            )
+            ax.set_ylabel("Logical Error Rate per Shot")
+        elif method == "per_round":
+            sinter.plot_error_rate(
+                ax=ax,
+                stats=self.samples,
+                group_func=lambda stat: stat.json_metadata["name"],
+                x_func=lambda stat: stat.json_metadata["error"],
+                failure_units_per_shot_func=lambda stat: stat.json_metadata["r"],
+            )
+            ax.set_ylabel("Logical Error Rate per Round")
+        else:
+            raise ValueError(
+                f"Unknown method: {method}. Method must be one of ['per_shot', 'per_round']."
+            )
 
         if pseudo_threshold:
             if not self.check_is_family(self.samples):
@@ -232,7 +252,6 @@ class ThresholdLAB:
 
         ax.loglog()
         ax.set_xlabel("Physical Error Rate")
-        ax.set_ylabel("Logical Error Rate")
         ax.grid(which="major")
         ax.grid(which="minor")
         ax.legend()
@@ -245,4 +264,4 @@ class ThresholdLAB:
         Check if the given samples belong to the same family.
         """
         first_name = samples[0].json_metadata["name"]
-        return all(sample.json_metadata["name"] == first_name for sample in samples)
+        return any(sample.json_metadata["name"] != first_name for sample in samples)
