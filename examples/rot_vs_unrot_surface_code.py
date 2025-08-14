@@ -30,7 +30,7 @@ def main(configs: dict[str, int | float], errors: np.ndarray) -> None:
         decoder="pymatching",
     )
 
-    rot_th_z.collect_stats(max_shots=10**4, max_errors=1000, logic_check="Z")
+    rot_th_z.collect_stats(max_shots=10**7, max_errors=1000, logic_check="Z")
 
     # Unrotated Surface code with Z logic
     unrot_th_z = ThresholdLAB(
@@ -40,11 +40,11 @@ def main(configs: dict[str, int | float], errors: np.ndarray) -> None:
         decoder="pymatching",
     )
 
-    unrot_th_z.collect_stats(max_shots=10**4, max_errors=1000, logic_check="Z")
+    unrot_th_z.collect_stats(max_shots=10**7, max_errors=1000, logic_check="Z")
 
     max_n = 0
     for sample in unrot_th_z.samples + rot_th_z.samples:
-        max_n = max(max_n, sample.json_metadata["n"])
+        max_n = max(max_n, np.sqrt(sample.json_metadata["n"]))
 
     fig, ax = plt.subplots(1, 1)
     for error in errors:
@@ -77,7 +77,7 @@ def main(configs: dict[str, int | float], errors: np.ndarray) -> None:
 
     ax.semilogy()
     ax.set_title("")
-    ax.set_xlabel("Number of Physical Qubits")
+    ax.set_xlabel("SQRT(Number of Physical Qubits)")
     ax.set_ylabel("Logical Error Rate per Round")
     ax.grid(which="major")
     ax.grid(which="minor")
@@ -94,9 +94,9 @@ def fit(collected_stats: list[sinter.TaskStats], error):
     ys = []
     log_ys = []
     for stats in collected_stats:
-        if not stats.errors or stats.json_metadata["error"] != error:
+        if stats.errors == 0 or stats.json_metadata["error"] != error:
             continue
-        n = stats.json_metadata["n"]
+        n = np.sqrt(stats.json_metadata["n"])
         per_shot = stats.errors / stats.shots
         per_round = sinter.shot_error_rate_to_piece_error_rate(
             per_shot, pieces=stats.json_metadata["r"]
@@ -110,6 +110,6 @@ def fit(collected_stats: list[sinter.TaskStats], error):
 
 if __name__ == "__main__":
 
-    configs = [{"distance": d} for d in [9, 11, 13, 15]]
-    errors = np.linspace(0.001, 0.005, 3)
+    configs = [{"distance": d} for d in [7, 9, 11, 13, 17, 23]]
+    errors = np.linspace(0.001, 0.005, 5)
     main(configs, errors)
