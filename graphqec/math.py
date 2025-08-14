@@ -22,6 +22,7 @@ __all__ = [
     "prep_matrix",
     "row_extended_check",
     "transpose_check",
+    "rankF2",
 ]
 
 
@@ -108,3 +109,33 @@ def transpose_check(check_matrix: np.ndarray) -> np.ndarray:
     Returns the transpose of a binary matrix.
     """
     return check_matrix.T.copy()
+
+
+def rankF2(A: np.ndarray) -> int:
+    r"""
+    Return the rank of A over the binary field F_2.
+    From https://github.com/sbravyi/BivariateBicycleCodes
+
+    :param A: The array.
+    """
+
+    X = np.identity(A.shape[1], dtype=int)
+
+    for i in range(A.shape[0]):
+
+        y = np.dot(A[i, :], X) % 2
+
+        not_y = (y + 1) % 2
+        good = X[:, np.nonzero(not_y)]
+        good = good[:, 0, :]
+
+        bad = X[:, np.nonzero(y)]
+        bad = bad[:, 0, :]
+
+        if bad.shape[1] > 0:
+            bad = np.add(bad, np.roll(bad, 1, axis=1))
+            bad = bad % 2
+            bad = np.delete(bad, 0, axis=1)
+            X = np.concatenate((good, bad), axis=1)
+
+    return A.shape[1] - X.shape[1]
