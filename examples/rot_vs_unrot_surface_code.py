@@ -78,7 +78,9 @@ def main(
             continue
 
         fit_unrot_z, x_unrot_z, y_unrot_z = fit(unrot_th_z.samples, error)
-        ax.scatter(x_unrot_z, y_unrot_z, marker="^", color=colors[index], s=50)
+        ax.scatter(
+            x_unrot_z, y_unrot_z, marker="^", color=colors[index], s=50, zorder=2
+        )
         ax.plot(
             [0, max_n],
             [
@@ -90,6 +92,8 @@ def main(
             color=colors[index],
             dashes=(2, 2),
             alpha=0.8,
+            linewidth=1.0,
+            zorder=2,
         )
         data.append(
             {
@@ -108,7 +112,7 @@ def main(
         )
 
         fit_rot_z, x_rot_z, y_rot_z = fit(rot_th_z.samples, error)
-        ax.scatter(x_rot_z, y_rot_z, marker="o", color=colors[index], s=50)
+        ax.scatter(x_rot_z, y_rot_z, marker="o", color=colors[index], s=50, zorder=2)
         ax.plot(
             [0, max_n],
             [
@@ -120,6 +124,8 @@ def main(
             color=colors[index],
             dashes=(2, 2),
             alpha=0.8,
+            linewidth=1.0,
+            zorder=2,
         )
         data.append(
             {
@@ -167,11 +173,15 @@ def main(
         for m, label in zip(["^", "o"], ["Unrotated", "Rotated"])
     ]
 
+    height_per_entry = 0.055
+    extra_for_title = 0.1
+    n_lines = len(marker_handles)
+    y_marker_legend = 1.0 - (n_lines * height_per_entry + extra_for_title)
     lengend_markers = ax.legend(
         handles=marker_handles,
         title="Code type",
         loc="upper left",
-        bbox_to_anchor=(1.05, 0.68),
+        bbox_to_anchor=(1.05, y_marker_legend),
         borderaxespad=0.0,
         frameon=True,
     )
@@ -190,7 +200,7 @@ def main(
         bbox_extra_artists=[legend_lines, lengend_markers],
     )
 
-    with open("rot_vs_unrot_data.json", "w") as f:
+    with open("rot_vs_unrot_surface_code.json", "w") as f:
         json.dump(data, f, indent=4)
 
 
@@ -220,8 +230,8 @@ def fit(
 
 if __name__ == "__main__":
 
-    max_shots = 100_000
-    max_errors = 100
+    max_shots = 1_000_000
+    max_errors = 1000
     logic_check = "Z"
     configs = [{"distance": d} for d in [9, 11, 13, 17, 20, 23]]
     errors = np.linspace(0.001, 0.01, 10)
