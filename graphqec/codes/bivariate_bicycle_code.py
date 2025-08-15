@@ -18,6 +18,7 @@ from __future__ import annotations
 import numpy as np
 
 from graphqec.codes.base_code import BaseCode
+from graphqec.codes.css_code import compute_logicals
 
 __all__ = ["BivariateBicycleCode"]
 
@@ -29,8 +30,8 @@ class BivariateBicycleCode(BaseCode):
 
     def __init__(
         self,
-        Lx: int = 12,
-        Ly: int = 6,
+        L1: int = 12,
+        L2: int = 6,
         a1: int = 3,
         a2: int = 1,
         a3: int = 2,
@@ -44,13 +45,13 @@ class BivariateBicycleCode(BaseCode):
         Initialize the Bivariate Bicycle (BB) code instance.
         See https://arxiv.org/pdf/2308.07915.pdf for details.
         A and B that depends on two variables x and y such that:
-        - x^Lx = 1
-        - y^Ly = 1
+        - x^L1 = 1
+        - y^L2 = 1
         - A = x^{a_1} + y^{a_2} + y^{a_3}
         - B = y^{b_1} + x^{b_2} + x^{b_3}
 
-        :param Lx: Indicating the number of physical qubits on one axis.
-        :param Ly: Indicating the number of physical qubits on one axis.
+        :param L1: Indicating the number of physical qubits on one axis.
+        :param L2: Indicating the number of physical qubits on one axis.
         :param a1: Power in the polynomial.
         :param a2: Power in the polynomial.
         :param a3: Power in the polynomial.
@@ -61,8 +62,8 @@ class BivariateBicycleCode(BaseCode):
 
         self._name = "Bivariate Bicycle"
         self._logic_check = []
-        self.Lx = Lx
-        self.Ly = Ly
+        self.L1 = L1
+        self.L2 = L2
         self.a1 = a1
         self.a2 = a2
         self.a3 = a3
@@ -93,24 +94,53 @@ class BivariateBicycleCode(BaseCode):
 
         super().__init__(*args, **kwargs)
 
-        n, k, d = self.get_parameters()
-        self._num_data_qubits = n
-        self._num_logical_qubits = k
-        self._distance = d
-        self._name = f"Bivariate Bicycle [[{n},{k},{d}]]"
+        self.get_parameters()
+        self._name = f"Bivariate Bicycle [[{self.num_data_qubits},{self.num_logical_qubits},{self.distance}]]"
+        self._logic_check = {
+            "Z": [np.where(row == 1)[0].tolist() for row in self.L_z],
+            "X": [np.where(row == 1)[0].tolist() for row in self.L_x],
+        }
+
+    @property
+    def Hx(self) -> np.ndarray:
+        r"""
+        The X check matrix of the CSS code.
+        """
+        return self._Hx
+
+    @property
+    def Hz(self) -> np.ndarray:
+        r"""
+        The Z check matrix of the CSS code.
+        """
+        return self._Hz
+
+    @property
+    def L_z(self) -> np.ndarray:
+        r"""
+        The logical operators for Z.
+        """
+        return self._L_z
+
+    @property
+    def L_x(self) -> np.ndarray:
+        r"""
+        The logical operators for X.
+        """
+        return self._L_x
 
     def compute_check_matrices(self) -> None:
         r""" """
         # Construct the cyclic shifts matrices
-        I_ell = np.identity(self.Lx, dtype=int)
-        I_m = np.identity(self.Ly, dtype=int)
+        I_ell = np.identity(self.L1, dtype=int)
+        I_m = np.identity(self.L2, dtype=int)
         # I = np.identity(self.Lx * self.Ly, dtype=int)
         x = {}
         y = {}
-        for i in range(self.Lx):
+        for i in range(self.L1):
             x[i] = np.kron(np.roll(I_ell, i, axis=1), I_m)
 
-        for i in range(self.Ly):
+        for i in range(self.L2):
             y[i] = np.kron(I_ell, np.roll(I_m, i, axis=1))
 
         self.x = x
@@ -125,23 +155,24 @@ class BivariateBicycleCode(BaseCode):
         self.B2 = x[self.b2]
         self.B3 = x[self.b3]
 
-    def get_parameters(self) -> tuple[int]:
+    def get_parameters(self) -> None:
         r"""Compute the parameters [[n,k,d]] of the code."""
-
-        n = self.Lx * self.Ly
 
         AT = np.transpose(self.A)
         BT = np.transpose(self.B)
 
-        hx = np.hstack((self.A, self.B))
-        hz = np.hstack((BT, AT))
+        self._Hx = np.hstack((self.A, self.B))
+        self._Hz = np.hstack((BT, AT))
 
-        # number of logical qubits
-        k = n - rankF2(hx) - rankF2(hz)
+        self._L_z = compute_logicals(Hx=self.Hx, Hz=self.Hz, logical="Z")
+        self._L_x = compute_logicals(Hx=self.Hx, Hz=self.Hz, logical="X")
 
-        # TODO
-        d = None
-        return n, k, d
+        self._num_logical_qubits = len(self._L_z)
+        self._num_data_qubits = len(self.Hz[0])
+
+        xdistance = min([sum(row) for row in self.L_x])
+        zdistance = min([sum(row) for row in self.L_z])
+        self._distance = min([xdistance, zdistance])
 
     def build_graph(self) -> None:
         r"""
@@ -150,34 +181,34 @@ class BivariateBicycleCode(BaseCode):
 
         L_data = [
             (i, {"type": "data", "label": "L", "label_id": i})
-            for i in range(self.Lx * self.Ly)
+            for i in range(self.L1 * self.L2)
         ]
         self._graph.add_nodes_from(L_data)
 
         R_data = [
             (
-                i + self.Lx * self.Ly,
+                i + self.L1 * self.L2,
                 {"type": "data", "label": "R", "label_id": i},
             )
-            for i in range(self.Lx * self.Ly)
+            for i in range(self.L1 * self.L2)
         ]
         self._graph.add_nodes_from(R_data)
 
         X_check = [
             (
-                i + 2 * self.Lx * self.Ly,
+                i + 2 * self.L1 * self.L2,
                 {"type": "check", "label": "X", "label_id": i},
             )
-            for i in range(self.Lx * self.Ly)
+            for i in range(self.L1 * self.L2)
         ]
         self._graph.add_nodes_from(X_check)
 
         Z_check = [
             (
-                i + 3 * self.Lx * self.Ly,
+                i + 3 * self.L1 * self.L2,
                 {"type": "check", "label": "Z", "label_id": i},
             )
-            for i in range(self.Lx * self.Ly)
+            for i in range(self.L1 * self.L2)
         ]
         self._graph.add_nodes_from(Z_check)
 
@@ -251,33 +282,3 @@ class BivariateBicycleCode(BaseCode):
                     neighbors.append(filtered_nodes[0])
 
         return neighbors
-
-
-def rankF2(A: np.ndarray) -> int:
-    r"""
-    Return the rank of A over the binary field F_2.
-    From https://github.com/sbravyi/BivariateBicycleCodes
-
-    :param A: The array.
-    """
-
-    X = np.identity(A.shape[1], dtype=int)
-
-    for i in range(A.shape[0]):
-
-        y = np.dot(A[i, :], X) % 2
-
-        not_y = (y + 1) % 2
-        good = X[:, np.nonzero(not_y)]
-        good = good[:, 0, :]
-
-        bad = X[:, np.nonzero(y)]
-        bad = bad[:, 0, :]
-
-        if bad.shape[1] > 0:
-            bad = np.add(bad, np.roll(bad, 1, axis=1))
-            bad = bad % 2
-            bad = np.delete(bad, 0, axis=1)
-            X = np.concatenate((good, bad), axis=1)
-
-    return A.shape[1] - X.shape[1]

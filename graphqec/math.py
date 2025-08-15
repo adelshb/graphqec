@@ -22,6 +22,7 @@ __all__ = [
     "row_extended_check",
     "transpose_check",
     "find_intersection_point",
+    "rankF2",
 ]
 
 
@@ -142,3 +143,33 @@ def find_intersection_point(dict_lines: dict[float, float]) -> tuple[float, floa
     # Solve least squares: A @ [x0, y0] = b
     intersection_point, _, _, _ = np.linalg.lstsq(A, b, rcond=None)
     return tuple(intersection_point)
+
+
+def rankF2(A: np.ndarray) -> int:
+    r"""
+    Return the rank of A over the binary field F_2.
+    From https://github.com/sbravyi/BivariateBicycleCodes
+
+    :param A: The array.
+    """
+
+    X = np.identity(A.shape[1], dtype=int)
+
+    for i in range(A.shape[0]):
+
+        y = np.dot(A[i, :], X) % 2
+
+        not_y = (y + 1) % 2
+        good = X[:, np.nonzero(not_y)]
+        good = good[:, 0, :]
+
+        bad = X[:, np.nonzero(y)]
+        bad = bad[:, 0, :]
+
+        if bad.shape[1] > 0:
+            bad = np.add(bad, np.roll(bad, 1, axis=1))
+            bad = bad % 2
+            bad = np.delete(bad, 0, axis=1)
+            X = np.concatenate((good, bad), axis=1)
+
+    return A.shape[1] - X.shape[1]

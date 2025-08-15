@@ -55,8 +55,8 @@ class CssCode(BaseCode):
         self._Hz = Hz
         self._num_data_qubits = len(Hz[0])
 
-        self._L_z = self.compute_logicals(logical="Z")
-        self._L_x = self.compute_logicals(logical="X")
+        self._L_z = compute_logicals(Hx=self.Hx, Hz=self.Hz, logical="Z")
+        self._L_x = compute_logicals(Hx=self.Hx, Hz=self.Hz, logical="X")
 
         self._num_logical_qubits = len(self._L_z)
 
@@ -230,31 +230,32 @@ class CssCode(BaseCode):
                     + 1
                 )
 
-    def compute_logicals(self, logical: str = "Z") -> np.ndarray:
-        r"""
-        Function for computing a set of logical operators for the input
-        parity check operators.
-        Find the image and kernel for each linear code.
 
-        :param logical: The type of logical operator to compute, either "X" or "Z".
-        :return: A list of logical operators.
-        """
+def compute_logicals(Hx: np.ndarray, Hz: np.ndarray, logical: str = "Z") -> np.ndarray:
+    r"""
+    Function for computing a set of logical operators for the input
+    parity check operators.
+    Find the image and kernel for each linear code.
 
-        if logical == "Z":
-            H1 = self.Hz
-            H2 = self.Hx
-        else:
-            H1 = self.Hx
-            H2 = self.Hz
+    :param logical: The type of logical operator to compute, either "X" or "Z".
+    :return: A list of logical operators.
+    """
 
-        # First find the kernel of H2
-        Ker_H2 = compute_kernel(H2)
+    if logical == "Z":
+        H1 = Hz
+        H2 = Hx
+    else:
+        H1 = Hx
+        H2 = Hz
 
-        # Find elements of Ker(H2) that are independent of Im(H1)
-        stack = np.vstack([H1, Ker_H2])
-        pivots = find_pivots(stack)
+    # First find the kernel of H2
+    Ker_H2 = compute_kernel(H2)
 
-        # Only choose rows introduced by Ker(H2)
-        L = np.array([stack[ii, :] for ii in pivots if ii >= len(H1)])
+    # Find elements of Ker(H2) that are independent of Im(H1)
+    stack = np.vstack([H1, Ker_H2])
+    pivots = find_pivots(stack)
 
-        return L
+    # Only choose rows introduced by Ker(H2)
+    L = np.array([stack[ii, :] for ii in pivots if ii >= len(H1)])
+
+    return L
