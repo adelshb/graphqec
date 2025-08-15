@@ -16,21 +16,21 @@ import warnings
 
 import sinter
 import matplotlib.pyplot as plt
-from stimbposd import SinterDecoder_BPOSD
-from beliefmatching import BeliefMatchingSinterDecoder
+from stimbposd import sinter_decoders as bposd_sinter_decoder
 from mwpf import SinterMWPFDecoder
+from beliefmatching import BeliefMatchingSinterDecoder
 
 from graphqec.codes.base_code import BaseCode
 
 __all__ = ["ThresholdLAB"]
 
-__available_decoders__ = {
-    "pymatching": None,
-    "fusion_blossom": None,
-    "bposd": SinterDecoder_BPOSD,
-    "mwpf": SinterMWPFDecoder,
-    "beliefmatching": BeliefMatchingSinterDecoder,
-}
+__available_decoders__ = [
+    "pymatching",
+    "fusion_blossom",
+    "bposd",
+    "mwpf",
+    "beliefmatching",
+]
 
 
 class ThresholdLAB:
@@ -70,7 +70,7 @@ class ThresholdLAB:
         self._code = code
         self._error_rates = error_rates
 
-        if decoder in __available_decoders__.keys():
+        if decoder in __available_decoders__:
             self._decoder = decoder
         else:
             ValueError("This decoder is not available.")
@@ -152,8 +152,9 @@ class ThresholdLAB:
         num_workers: int | None = None,
         max_shots: int = 10**4,
         max_errors: int = 1000,
-        decoder_params: dict[str, any] | None = None,
         logic_check: str = "Z",
+        save_resume_filepath: str | None = None,
+        existing_data_filepaths: list[str] = [],
     ) -> None:
         r"""
         Collect sampling statistics over ranges of distance and errors.
@@ -162,35 +163,32 @@ class ThresholdLAB:
         :param max_shots: Maximum number of shots.
         :param max_errors: Maximum tolerated errors.
         :param decoder_params: The optional decoder parameters.
+        :param logic_check: The logic check type.
+        :param save_resume_filepath: The path to the file where the statistics will be saved.
+        :param existing_data_filepaths: The paths to existing data files to resume from.
         """
         if num_workers is None:
             num_workers = multiprocessing.cpu_count() - 1
 
-        if __available_decoders__[self.decoder] is not None:
+        if self.decoder in ["pymatching", "fusion_blossom"]:
+            decoder_params = None
+        elif self.decoder == "bposd":
+            decoder_params = bposd_sinter_decoder()
+        elif self.decoder == "mwpf":
+            decoder_params = {"mwpf": SinterMWPFDecoder(cluster_node_limit=50)}
+        elif self.decoder == "beliefmatching":
+            decoder_params = {"beliefmatching": BeliefMatchingSinterDecoder()}
 
-            # if decoder_params is None:
-            #     custom_decoder = {self.decoder: __available_decoders__[self.decoder]()}
-            # else:
-            #     custom_decoder = {
-            #         self.decoder: __available_decoders__[self.decoder](**decoder_params)
-            #     }
-
-            self._samples = sinter.collect(
-                num_workers=num_workers,
-                max_shots=max_shots,
-                max_errors=max_errors,
-                tasks=self.generate_sinter_tasks(logic_check=logic_check),
-                decoders=[self.decoder],
-                custom_decoders=decoder_params,
-            )
-        else:
-            self._samples = sinter.collect(
-                num_workers=num_workers,
-                max_shots=max_shots,
-                max_errors=max_errors,
-                tasks=self.generate_sinter_tasks(logic_check=logic_check),
-                decoders=[self.decoder],
-            )
+        self._samples = sinter.collect(
+            num_workers=num_workers,
+            max_shots=max_shots,
+            max_errors=max_errors,
+            tasks=self.generate_sinter_tasks(logic_check=logic_check),
+            decoders=[self.decoder],
+            custom_decoders=decoder_params,
+            save_resume_filepath=save_resume_filepath,
+            existing_data_filepaths=existing_data_filepaths,
+        )
 
     def plot_stats(
         self,
