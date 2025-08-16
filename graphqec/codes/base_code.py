@@ -33,6 +33,7 @@ class BaseCode(ABC):
         "_name",
         "_distance",
         "_num_data_qubits",
+        "_num_physical_qubits",
         "_num_logical_qubits",
         "_memory_circuit",
         "_depolarize1_rate",
@@ -63,9 +64,9 @@ class BaseCode(ABC):
         self._measurement = Measurement()
         self._checks: list[str]
         self._logic_check: dict
-
         self._graph = nx.Graph()
         self.build_graph()
+        self._num_physical_qubits = self.graph.number_of_nodes()
         self.get_check_label()
 
         self._length_sym_measurement = max(
@@ -78,6 +79,13 @@ class BaseCode(ABC):
         The name of the code.
         """
         return self._name
+
+    @property
+    def num_physical_qubits(self) -> int:
+        r"""
+        The number of physical qubits.
+        """
+        return self._num_physical_qubits
 
     @property
     def num_data_qubits(self) -> int:

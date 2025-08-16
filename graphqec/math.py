@@ -8,7 +8,6 @@
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
-# limitations under the License.
 
 from __future__ import annotations
 
@@ -22,6 +21,7 @@ __all__ = [
     "prep_matrix",
     "row_extended_check",
     "transpose_check",
+    "find_intersection_point",
     "rankF2",
 ]
 
@@ -109,6 +109,40 @@ def transpose_check(check_matrix: np.ndarray) -> np.ndarray:
     Returns the transpose of a binary matrix.
     """
     return check_matrix.T.copy()
+
+
+def find_intersection_point(dict_lines: dict[float, float]) -> tuple[float, float]:
+    r"""
+    Finds the intersection point of multiple lines defined by their slopes and intercepts.
+    Used to find the logical and physical threshold points.
+
+    :param lines: A dictionary where keys are slopes and values are intercepts.
+    """
+    lines = []
+
+    # Fit each line using numpy.polyfit
+    for line_dict in dict_lines:
+        x = np.array(list(line_dict.keys()))
+        y = np.array(list(line_dict.values()))
+        m, b = np.polyfit(x, y, 1)
+        lines.append((m, b))
+
+    # Set up least squares to find best (x0, y0)
+    # Each line gives: y0 = m*x0 + b  => m*x0 - y0 + b = 0
+    # So we want to minimize: sum((m*x0 - y0 + b)^2)
+    A = []
+    b = []
+    for m, b_i in lines:
+        # m*x0 - y0 + b_i = 0  => [m, -1] * [x0, y0] = -b_i
+        A.append([m, -1])
+        b.append(-b_i)
+
+    A = np.array(A)
+    b = np.array(b)
+
+    # Solve least squares: A @ [x0, y0] = b
+    intersection_point, _, _, _ = np.linalg.lstsq(A, b, rcond=None)
+    return tuple(intersection_point)
 
 
 def rankF2(A: np.ndarray) -> int:
