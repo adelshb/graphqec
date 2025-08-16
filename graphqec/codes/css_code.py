@@ -69,9 +69,9 @@ class CssCode(BaseCode):
 
         self._distance = self.distance_upper_bound()
         if name is not None:
-            self._name = f"{name} [[{self.num_data_qubits},{self.num_logical_qubits},{self.distance}]]"
+            self._name = f"{name} [[{self.num_physical_qubits},{self.num_logical_qubits},{self.distance}]]"
         else:
-            self._name = f"CSS [[{self.num_data_qubits},{self.num_logical_qubits},{self.distance}]]"
+            self._name = f"CSS [[{self.num_physical_qubits},{self.num_logical_qubits},{self.distance}]]"
 
     @property
     def Hx(self) -> np.ndarray:
