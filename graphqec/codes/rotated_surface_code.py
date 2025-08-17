@@ -32,6 +32,9 @@ class RotatedSurfaceCode(BaseCode):
         Initialize the Rotated Surface Code instance.
         """
 
+        if not distance % 2:
+            raise ValueError("Distance must be odd.")
+
         self._distance = distance
         self._num_data_qubits = self.distance**2
         self._num_logical_qubits = 1
