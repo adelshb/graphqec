@@ -146,7 +146,7 @@ class ThresholdLAB:
                     "n": int(code.num_physical_qubits),
                     "k": int(code.num_logical_qubits),
                     "d": int(code.distance),
-                    "r": num_rounds,
+                    "r": int(num_rounds),
                 }
                 yield sinter.Task(circuit=code.memory_circuit, json_metadata=metadata)
 
