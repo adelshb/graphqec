@@ -22,11 +22,16 @@ from graphqec import RotatedSurfaceCode, UnrotatedSurfaceCode, ThresholdLAB
 
 
 def main(
-    configs: dict[str, int | float],
+    configs_rot: dict[str, int | float],
+    configs_unrot: dict[str, int | float],
     errors: np.ndarray,
     max_shots: int,
     max_errors: int,
     logic_check: str,
+    save_path_rot: str = None,
+    save_path_unrot: str = None,
+    existing_files_rot: list[str] = [],
+    existing_files_unrot: list[str] = [],
 ) -> None:
     r"""
     Compare the performance of Rotated and Unrotated Surface Codes.
@@ -41,24 +46,32 @@ def main(
 
     # Get stats for the Rotated Surface Code with Z logic
     rot_th_z = ThresholdLAB(
-        configurations=configs,
+        configurations=configs_rot,
         code=RotatedSurfaceCode,
         error_rates=errors,
         decoder="pymatching",
     )
     rot_th_z.collect_stats(
-        max_shots=max_shots, max_errors=max_errors, logic_check=logic_check
+        max_shots=max_shots,
+        max_errors=max_errors,
+        logic_check=logic_check,
+        save_resume_filepath=save_path_rot,
+        existing_data_filepaths=existing_files_rot,
     )
 
     # Get stats for the Unrotated Surface code with Z logic
     unrot_th_z = ThresholdLAB(
-        configurations=configs,
+        configurations=configs_unrot,
         code=UnrotatedSurfaceCode,
         error_rates=errors,
         decoder="pymatching",
     )
     unrot_th_z.collect_stats(
-        max_shots=max_shots, max_errors=max_errors, logic_check=logic_check
+        max_shots=max_shots,
+        max_errors=max_errors,
+        logic_check=logic_check,
+        save_resume_filepath=save_path_unrot,
+        existing_data_filepaths=existing_files_unrot,
     )
 
     # Find the range of values for the fit
@@ -173,7 +186,7 @@ def main(
         for m, label in zip(["^", "o"], ["Unrotated", "Rotated"])
     ]
 
-    height_per_entry = 0.055
+    height_per_entry = 0.2
     extra_for_title = 0.1
     n_lines = len(marker_handles)
     y_marker_legend = 1.0 - (n_lines * height_per_entry + extra_for_title)
@@ -190,7 +203,7 @@ def main(
     ax.set_xlim(min_n - 2, max_n + 2)
     ax.set_title("")
     ax.set_xlabel(r"$\sqrt{\mathrm{Number\ of\ Physical\ Qubits}}$")
-    ax.set_ylabel("Logical Error Rate per Round")
+    ax.set_ylabel("Logical Error Rate per d rounds")
     ax.grid(which="major", zorder=0)
     ax.grid(which="minor", zorder=0)
     plt.tight_layout()
@@ -219,10 +232,11 @@ def fit(
         n = np.sqrt(stats.json_metadata["n"])
         per_shot = stats.errors / stats.shots
         per_round = sinter.shot_error_rate_to_piece_error_rate(
-            per_shot, pieces=stats.json_metadata["r"]
+            per_shot, pieces=stats.json_metadata["r"] * stats.json_metadata["d"]
         )
         xs.append(n)
         ys.append(per_round)
+        # print(f"x={xs[-1]} y={ys[-1]} for {stats.json_metadata}")
         log_ys.append(np.log(per_round))
     fit = scipy.stats.linregress(xs, log_ys)
     return fit, xs, ys
@@ -233,12 +247,22 @@ if __name__ == "__main__":
     max_shots = 1_000_000
     max_errors = 1000
     logic_check = "Z"
-    configs = [{"distance": d} for d in [9, 11, 13, 17, 20, 23]]
-    errors = np.linspace(0.001, 0.01, 10)
+    # configs = [{"distance": d} for d in [9, 11, 13, 17, 20, 23]]
+    # errors = np.linspace(0.001, 0.01, 10)
+    configs_rot = [{"distance": d} for d in [7, 11, 13, 17]]
+    configs_unrot = [{"distance": d} for d in [7, 11, 13, 17]]
+    errors = np.linspace(0.001, 0.008, 5)
+    save_path_rot = "rot_vs_unrot_surface_code_rot.csv"
+    save_path_unrot = "rot_vs_unrot_surface_code_unrot.csv"
     main(
-        configs=configs,
+        configs_rot=configs_rot,
+        configs_unrot=configs_unrot,
         errors=errors,
         max_shots=max_shots,
         max_errors=max_errors,
         logic_check=logic_check,
+        save_path_rot=save_path_rot,
+        save_path_unrot=save_path_unrot,
+        existing_files_rot=[],
+        existing_files_unrot=[],
     )
