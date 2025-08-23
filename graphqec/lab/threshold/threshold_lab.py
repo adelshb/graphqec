@@ -261,5 +261,5 @@ class ThresholdLAB:
         r"""
         Check if the given samples belong to the same family.
         """
-        first_name = samples[0].json_metadata["name"]
-        return any(sample.json_metadata["name"] != first_name for sample in samples)
+        lst = [sample.json_metadata["name"] for sample in samples]
+        return all(x == lst[0] for x in lst)

@@ -30,7 +30,8 @@ def main(
     logic_check: str,
     save_path_rot: str = None,
     save_path_unrot: str = None,
-    existing_files: list[str] = [],
+    existing_files_rot: list[str] = [],
+    existing_files_unrot: list[str] = [],
 ) -> None:
     r"""
     Compare the performance of Rotated and Unrotated Surface Codes.
@@ -55,6 +56,7 @@ def main(
         max_errors=max_errors,
         logic_check=logic_check,
         save_resume_filepath=save_path_rot,
+        existing_data_filepaths=existing_files_rot,
     )
 
     # Get stats for the Unrotated Surface code with Z logic
@@ -69,6 +71,7 @@ def main(
         max_errors=max_errors,
         logic_check=logic_check,
         save_resume_filepath=save_path_unrot,
+        existing_data_filepaths=existing_files_unrot,
     )
 
     # Find the range of values for the fit
@@ -242,18 +245,15 @@ def fit(
 if __name__ == "__main__":
 
     max_shots = 1_000_000
-    max_errors = 10000
+    max_errors = 1000
     logic_check = "Z"
     # configs = [{"distance": d} for d in [9, 11, 13, 17, 20, 23]]
     # errors = np.linspace(0.001, 0.01, 10)
-    configs_rot = [{"distance": d} for d in [5, 7, 11, 13, 17, 23]]
-    configs_unrot = [{"distance": d} for d in [5, 7, 11, 13, 17, 23]]
-    errors = np.linspace(0.005, 0.01, 5)
+    configs_rot = [{"distance": d} for d in [7, 11, 13, 17]]
+    configs_unrot = [{"distance": d} for d in [7, 11, 13, 17]]
+    errors = np.linspace(0.001, 0.008, 5)
     save_path_rot = "rot_vs_unrot_surface_code_rot.csv"
     save_path_unrot = "rot_vs_unrot_surface_code_unrot.csv"
-
-    # To add if any existing files. Cannot be the same as save_path
-    existing_files = []
     main(
         configs_rot=configs_rot,
         configs_unrot=configs_unrot,
@@ -263,5 +263,6 @@ if __name__ == "__main__":
         logic_check=logic_check,
         save_path_rot=save_path_rot,
         save_path_unrot=save_path_unrot,
-        existing_files=existing_files,
+        existing_files_rot=[],
+        existing_files_unrot=[],
     )
